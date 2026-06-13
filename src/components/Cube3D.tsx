@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CubeState, FaceName } from '../types';
 import { COLOR_MAP } from '../cubeEngine';
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, RefreshCw, Layers, Menu, X } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, RefreshCw, Layers, Menu, X, Lock, Unlock } from 'lucide-react';
 
 const getSector = (y: number): number => {
   const norm = ((y % 360) + 360) % 360;
@@ -63,6 +63,12 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   const [zoom, setZoom] = useState<number>(1.0);
   const [stars, setStars] = useState<{ id: number; x: number; y: number; opacity: number; size: number; delay: number }[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [viewLocked, setViewLocked] = useState<boolean>(false);
+  
+  // Velocity for momentum rotation
+  const velocityX = useRef<number>(0);
+  const velocityY = useRef<number>(0);
+  const momentumAnimationFrame = useRef<number | null>(null);
 
   // Highlight of active line (3 adjacent pieces)
   const [activeLine, setActiveLine] = useState<{
@@ -101,6 +107,30 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
       delay: Math.random() * 4
     }));
     setStars(list);
+  }, []);
+
+  // Momentum rotation effect
+  useEffect(() => {
+    const animate = () => {
+      if (Math.abs(velocityX.current) > 0.01 || Math.abs(velocityY.current) > 0.01) {
+        setRotY(prev => prev + velocityY.current);
+        setRotX(prev => Math.max(-85, Math.min(85, prev + velocityX.current)));
+        
+        // Apply friction
+        velocityX.current *= 0.95;
+        velocityY.current *= 0.95;
+        
+        momentumAnimationFrame.current = requestAnimationFrame(animate);
+      }
+    };
+    
+    momentumAnimationFrame.current = requestAnimationFrame(animate);
+    
+    return () => {
+      if (momentumAnimationFrame.current) {
+        cancelAnimationFrame(momentumAnimationFrame.current);
+      }
+    };
   }, []);
 
   // Handle zooming using mouse scroll wheel
@@ -398,10 +428,14 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     bgDragStart.current = { x: clientX, y: clientY };
     bgLastPos.current = { x: clientX, y: clientY };
     bgDragDisplacement.current = 0;
+    
+    // Reset velocity when starting new drag
+    velocityX.current = 0;
+    velocityY.current = 0;
   };
 
   const handleBgMove = (clientX: number, clientY: number) => {
-    if (!isDraggingBackground.current) return;
+    if (!isDraggingBackground.current || viewLocked) return;
 
     const dx = clientX - bgLastPos.current.x;
     const dy = clientY - bgLastPos.current.y;
@@ -415,12 +449,33 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     setRotY(prev => prev + dx * 0.45);
     setRotX(prev => Math.max(-85, Math.min(85, prev - dy * 0.45)));
 
+    // Capture velocity for momentum
+    velocityY.current = dx * 0.45;
+    velocityX.current = -dy * 0.45;
+
     bgLastPos.current = { x: clientX, y: clientY };
   };
 
   const handleBgEnd = () => {
     if (isDraggingBackground.current) {
       isDraggingBackground.current = false;
+      
+      // If view is locked, snap to nearest 2D view
+      if (viewLocked) {
+        velocityX.current = 0;
+        velocityY.current = 0;
+        
+        // Snap to nearest face
+        const normalizedY = ((rotY % 360) + 360) % 360;
+        const snapAngles = [0, 90, 180, 270];
+        const closest = snapAngles.reduce((prev, curr) => 
+          Math.abs(curr - normalizedY) < Math.abs(prev - normalizedY) ? curr : prev
+        );
+        
+        setRotY(closest);
+        setRotX(0);
+      }
+      
       // If user simply clicks/touches the black free grid space (low displacement), deselect activeLine
       if (bgDragDisplacement.current < 5) {
         setActiveLine(null);
@@ -760,6 +815,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
           </button>
         </div>
 
+        {/* Lock View Button */}
+        <button
+          type="button"
+          id="btn-lock-view"
+          onClick={() => setViewLocked(!viewLocked)}
+          className={`w-full py-2 font-mono text-[9px] uppercase font-black rounded border transition-all flex items-center justify-center gap-1.5 ${
+            viewLocked 
+              ? 'bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 border-teal-500/30 cursor-pointer' 
+              : 'bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-white border-slate-850 cursor-pointer'
+          }`}
+          title={viewLocked ? "Unlock rotation" : "Lock to 2D views"}
+        >
+          {viewLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+          {viewLocked ? 'Locked' : 'Free'}
+        </button>
+
       </div>
 
       {/* Background/Full-screen Sandbox Space */}
@@ -811,7 +882,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
           style={{
             transformStyle: 'preserve-3d',
             transform: `scale(${zoom}) rotateX(${rotX}deg) rotateY(${rotY}deg)`,
-            transition: 'none'
+            transition: viewLocked && !isDraggingBackground.current ? 'transform 0.5s ease-out' : 'none'
           }}
         >
           {renderFaceStickers('U')}
