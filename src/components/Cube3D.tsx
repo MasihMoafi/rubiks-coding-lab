@@ -61,6 +61,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   const [rotX, setRotX] = useState<number>(-22);
   const [rotY, setRotY] = useState<number>(38);
   const [zoom, setZoom] = useState<number>(1.0);
+  const [autoRotate, setAutoRotate] = useState<boolean>(true);
   const [stars, setStars] = useState<{ id: number; x: number; y: number; opacity: number; size: number; delay: number }[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
@@ -102,6 +103,15 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     }));
     setStars(list);
   }, []);
+
+  // Auto-rotation effect
+  useEffect(() => {
+    if (!autoRotate) return;
+    const interval = setInterval(() => {
+      setRotY(prev => prev + 0.3);
+    }, 30);
+    return () => clearInterval(interval);
+  }, [autoRotate]);
 
   // Handle zooming using mouse scroll wheel
   useEffect(() => {
@@ -394,6 +404,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   const handleBgStart = (clientX: number, clientY: number, isSticker: boolean) => {
     if (isSticker) return; // ignore sticker clicks
 
+    setAutoRotate(false);
     isDraggingBackground.current = true;
     bgDragStart.current = { x: clientX, y: clientY };
     bgLastPos.current = { x: clientX, y: clientY };
