@@ -811,7 +811,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
           style={{
             transformStyle: 'preserve-3d',
             transform: `scale(${zoom}) rotateX(${rotX}deg) rotateY(${rotY}deg)`,
-            transition: isDraggingBackground.current ? 'none' : 'transform 0.1s ease-out'
+            transition: 'none'
           }}
         >
           {renderFaceStickers('U')}
