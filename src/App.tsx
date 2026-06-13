@@ -70,17 +70,17 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
       
       {/* Absolute Minimal Control Row */}
-      <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md px-4 py-3 flex items-center justify-end shadow-sm shrink-0">
+      <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md px-4 py-2 flex items-center justify-end shadow-sm shrink-0">
         
         {/* Global actions with newly introduced Undo command */}
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <button
             type="button"
             id="global-scramble"
             onClick={handleScramble}
-            className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-mono text-sm font-bold rounded-md border border-amber-500/10 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+            className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-mono text-[9px] font-bold rounded-md border border-amber-500/10 transition-all active:scale-95 cursor-pointer flex items-center gap-1"
           >
-            <Shuffle className="w-4 h-4" /> Scramble
+            <Shuffle className="w-2.5 h-2.5" /> Scramble
           </button>
           
           <button
@@ -88,22 +88,22 @@ export default function App() {
             id="global-undo"
             disabled={cubeStatesHistory.length === 0}
             onClick={handleUndo}
-            className={`px-4 py-2 font-mono text-sm font-bold rounded-md border transition-all active:scale-95 cursor-pointer flex items-center gap-2 ${
+            className={`px-2.5 py-1 font-mono text-[9px] font-bold rounded-md border transition-all active:scale-95 cursor-pointer flex items-center gap-1 ${
               cubeStatesHistory.length > 0 
                 ? 'bg-amber-500/10 hover:bg-amber-500 border-amber-500/15 text-amber-300 hover:text-slate-950' 
                 : 'bg-slate-950 border-slate-900 text-slate-700 cursor-not-allowed'
             }`}
           >
-            <Undo2 className="w-4 h-4" /> Undo
+            <Undo2 className="w-2.5 h-2.5" /> Undo
           </button>
 
           <button
             type="button"
             id="global-reset"
             onClick={handleReset}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-855 text-slate-400 hover:text-white font-mono text-sm font-bold rounded-md border border-slate-800 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-855 text-slate-400 hover:text-white font-mono text-[9px] font-bold rounded-md border border-slate-800 transition-all active:scale-95 cursor-pointer flex items-center gap-1"
           >
-            <RotateCcw className="w-4 h-4" /> Reset
+            <RotateCcw className="w-2.5 h-2.5" /> Reset
           </button>
         </div>
 
@@ -123,9 +123,9 @@ export default function App() {
 
         {/* Dynamic status pill displayed subtly on top of the background */}
         {cubeIsSolved && (
-          <div className="absolute bottom-4 right-4 z-40 bg-emerald-600/10 backdrop-blur-md border border-emerald-500/30 px-6 py-3 rounded-full flex items-center gap-3 shadow-lg animate-pulse">
-            <span className="text-2xl">🏆</span>
-            <span className="text-sm font-bold text-emerald-400 uppercase tracking-widest font-mono">
+          <div className="absolute bottom-4 right-4 z-40 bg-emerald-600/10 backdrop-blur-md border border-emerald-500/30 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-lg animate-pulse">
+            <span className="text-xs">🏆</span>
+            <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest font-mono">
               SOLVED
             </span>
           </div>
