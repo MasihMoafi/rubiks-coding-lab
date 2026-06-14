@@ -1,6 +1,8 @@
 {
-  "name": "Rubik's Coding Lab",
-  "description": "An interactive, tactile 3D Rubik's Cube Emulator designed with physical face-swipe touch gestures, real-time mechanical sound synthesis, and a guided CFOP Speedcubing Academy.",
+  "name": "Remix: Rubik\u0027s Coding Lab",
+  "description": "An interactive, tactile 3D Rubik\u0027s Cube Emulator designed with physical face-swipe touch gestures, real-time mechanical sound synthesis, and a guided CFOP Speedcubing Academy.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
