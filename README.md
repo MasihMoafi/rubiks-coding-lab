@@ -40,7 +40,3 @@ The project is designed to evolve into an educational platform where users can l
 
 ---
 
-## 🔗 Author & Projects
-
-*   Developer: **[Masih Moafi](https://masihmoafi.tech)**
-*   Core Agent Harness Configurations: **[harnesses-I-use](https://github.com/MasihMoafi/harnesses-I-use)**
