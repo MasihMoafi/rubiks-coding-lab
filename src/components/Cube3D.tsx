@@ -623,6 +623,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
       <div className="absolute top-4 left-4 z-40 md:hidden">
         <button
           type="button"
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 bg-slate-900/90 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-white rounded-lg transition-all shadow-md cursor-pointer flex items-center justify-center"
         >
@@ -647,6 +648,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
           <button
             type="button"
             id="btn-spin-up"
+            aria-label="Spin up"
             disabled={!activeLine || activeLine.type !== 'col'}
             onClick={() => executeSelectedMove('up')}
             className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${
@@ -662,6 +664,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
           <button
             type="button"
             id="btn-spin-left"
+            aria-label="Spin left"
             disabled={!activeLine || activeLine.type !== 'row'}
             onClick={() => executeSelectedMove('left')}
             className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${
@@ -680,6 +683,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
           <button
             type="button"
             id="btn-spin-right"
+            aria-label="Spin right"
             disabled={!activeLine || activeLine.type !== 'row'}
             onClick={() => executeSelectedMove('right')}
             className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${
@@ -695,6 +699,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
           <button
             type="button"
             id="btn-spin-down"
+            aria-label="Spin down"
             disabled={!activeLine || activeLine.type !== 'col'}
             onClick={() => executeSelectedMove('down')}
             className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${
