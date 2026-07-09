@@ -236,6 +236,13 @@ export interface ScrambleResult {
   moves: string[];
 }
 
+// Generate a cryptographically secure random number between 0 (inclusive) and 1 (exclusive)
+function secureRandom(): number {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / (0xffffffff + 1);
+}
+
 export function generateScramble(state: CubeState, movesCount = 15): ScrambleResult {
   const faces: FaceName[] = ['U', 'D', 'F', 'B', 'L', 'R'];
   const modifiers = ['', "'"];
@@ -247,10 +254,10 @@ export function generateScramble(state: CubeState, movesCount = 15): ScrambleRes
   for (let i = 0; i < movesCount; i++) {
     let face: FaceName;
     do {
-      face = faces[Math.floor(Math.random() * faces.length)];
+      face = faces[Math.floor(secureRandom() * faces.length)];
     } while (face === lastFace); // Avoid redundant dual-turns of the same face
     
-    const modifier = modifiers[Math.floor(Math.random() * modifiers.length)];
+    const modifier = modifiers[Math.floor(secureRandom() * modifiers.length)];
     const moveStr = `${face}${modifier}`;
     
     current = executeMove(current, moveStr);
