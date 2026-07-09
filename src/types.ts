@@ -4,8 +4,10 @@ export type CubeColor = 'white' | 'yellow' | 'green' | 'blue' | 'orange' | 'red'
 
 export type CubeState = Record<FaceName, CubeColor[][]>;
 
+export type SliceName = 'M' | 'E' | 'S';
+
 export interface CubeMove {
-  face: FaceName;
+  face: FaceName | SliceName;
   inverted: boolean; // true if counter-clockwise (e.g. U')
 }
 

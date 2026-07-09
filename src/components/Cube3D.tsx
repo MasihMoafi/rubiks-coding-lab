@@ -1,55 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CubeState, FaceName } from '../types';
+const getFaceLocalAxes = (face: FaceName) => {
+  const el00 = document.getElementById(`sticker-${face}-0-0`);
+  const el01 = document.getElementById(`sticker-${face}-0-1`);
+  const el10 = document.getElementById(`sticker-${face}-1-0`);
+
+  if (el00 && el01 && el10) {
+    const r00 = el00.getBoundingClientRect();
+    const r01 = el01.getBoundingClientRect();
+    const r10 = el10.getBoundingClientRect();
+
+    return {
+      xVec: { x: r01.left - r00.left, y: r01.top - r00.top },
+      yVec: { x: r10.left - r00.left, y: r10.top - r00.top }
+    };
+  }
+  return { xVec: { x: 1, y: 0 }, yVec: { x: 0, y: 1 } }; // fallback
+};
+
+
+
 import { COLOR_MAP } from '../cubeEngine';
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, RefreshCw, Layers, Menu, X } from 'lucide-react';
 
-const getSector = (y: number): number => {
-  const norm = ((y % 360) + 360) % 360;
-  if (norm >= 315 || norm < 45) return 0;
-  if (norm >= 45 && norm < 135) return 1;
-  if (norm >= 135 && norm < 225) return 2;
-  return 3;
-};
-
-const getPhysicalDirectionU = (sector: number, dir: 'left' | 'right' | 'up' | 'down'): 'left' | 'right' | 'up' | 'down' => {
-  if (sector === 0) return dir;
-  if (sector === 1) {
-    if (dir === 'left') return 'down';
-    if (dir === 'right') return 'up';
-    if (dir === 'up') return 'left';
-    return 'right';
-  }
-  if (sector === 2) {
-    if (dir === 'left') return 'right';
-    if (dir === 'right') return 'left';
-    if (dir === 'up') return 'down';
-    return 'up';
-  }
-  if (dir === 'left') return 'up';
-  if (dir === 'right') return 'down';
-  if (dir === 'up') return 'right';
-  return 'left';
-};
-
-const getPhysicalDirectionD = (sector: number, dir: 'left' | 'right' | 'up' | 'down'): 'left' | 'right' | 'up' | 'down' => {
-  if (sector === 0) return dir;
-  if (sector === 1) {
-    if (dir === 'left') return 'up';
-    if (dir === 'right') return 'down';
-    if (dir === 'up') return 'right';
-    return 'left';
-  }
-  if (sector === 2) {
-    if (dir === 'left') return 'right';
-    if (dir === 'right') return 'left';
-    if (dir === 'up') return 'down';
-    return 'up';
-  }
-  if (dir === 'left') return 'down';
-  if (dir === 'right') return 'up';
-  if (dir === 'up') return 'left';
-  return 'right';
-};
 
 interface Cube3DProps {
   cubeState: CubeState;
@@ -214,6 +187,8 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   }, [activeLine]);
 
   // General coordinate mapping for high-precision rotations
+  // General coordinate mapping for high-precision rotations
+  // General coordinate mapping for high-precision rotations
   const calculateMove = (
     face: FaceName,
     idx: number,
@@ -222,22 +197,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (face === 'F') {
       if (direction === 'left') {
         if (idx === 0) return "U";
-        if (idx === 1) return "U' D";
+        if (idx === 1) return "E'";
         return "D'";
       }
       if (direction === 'right') {
         if (idx === 0) return "U'";
-        if (idx === 1) return "U D'";
+        if (idx === 1) return "E";
         return "D";
       }
       if (direction === 'up') {
         if (idx === 0) return "L'";
-        if (idx === 1) return "L R'";
+        if (idx === 1) return "M'";
         return "R";
       }
       if (direction === 'down') {
         if (idx === 0) return "L";
-        if (idx === 1) return "L' R";
+        if (idx === 1) return "M";
         return "R'";
       }
     }
@@ -245,22 +220,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (face === 'U') {
       if (direction === 'left') {
         if (idx === 0) return "B";
-        if (idx === 1) return "B' F";
+        if (idx === 1) return "S'";
         return "F'";
       }
       if (direction === 'right') {
         if (idx === 0) return "B'";
-        if (idx === 1) return "B F'";
+        if (idx === 1) return "S";
         return "F";
       }
       if (direction === 'up') {
         if (idx === 0) return "L'";
-        if (idx === 1) return "L R'";
+        if (idx === 1) return "M'";
         return "R";
       }
       if (direction === 'down') {
         if (idx === 0) return "L";
-        if (idx === 1) return "L' R";
+        if (idx === 1) return "M";
         return "R'";
       }
     }
@@ -268,22 +243,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (face === 'R') {
       if (direction === 'left') {
         if (idx === 0) return "U";
-        if (idx === 1) return "U' D";
+        if (idx === 1) return "E'";
         return "D'";
       }
       if (direction === 'right') {
         if (idx === 0) return "U'";
-        if (idx === 1) return "U D'";
+        if (idx === 1) return "E";
         return "D";
       }
       if (direction === 'up') {
         if (idx === 0) return "F'";
-        if (idx === 1) return "F B'";
+        if (idx === 1) return "S'";
         return "B";
       }
       if (direction === 'down') {
         if (idx === 0) return "F";
-        if (idx === 1) return "F' B";
+        if (idx === 1) return "S";
         return "B'";
       }
     }
@@ -291,22 +266,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (face === 'L') {
       if (direction === 'left') {
         if (idx === 0) return "U";
-        if (idx === 1) return "U' D";
+        if (idx === 1) return "E'";
         return "D'";
       }
       if (direction === 'right') {
         if (idx === 0) return "U'";
-        if (idx === 1) return "U D'";
+        if (idx === 1) return "E";
         return "D";
       }
       if (direction === 'up') {
         if (idx === 0) return "B'";
-        if (idx === 1) return "B F'";
+        if (idx === 1) return "S";
         return "F";
       }
       if (direction === 'down') {
         if (idx === 0) return "B";
-        if (idx === 1) return "B' F";
+        if (idx === 1) return "S'";
         return "F'";
       }
     }
@@ -314,22 +289,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (face === 'D') {
       if (direction === 'left') {
         if (idx === 0) return "F";
-        if (idx === 1) return "F' B";
+        if (idx === 1) return "S";
         return "B'";
       }
       if (direction === 'right') {
         if (idx === 0) return "F'";
-        if (idx === 1) return "F B'";
+        if (idx === 1) return "S'";
         return "B";
       }
       if (direction === 'up') {
         if (idx === 0) return "L'";
-        if (idx === 1) return "L R'";
+        if (idx === 1) return "M'";
         return "R";
       }
       if (direction === 'down') {
         if (idx === 0) return "L";
-        if (idx === 1) return "L' R";
+        if (idx === 1) return "M";
         return "R'";
       }
     }
@@ -337,22 +312,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (face === 'B') {
       if (direction === 'left') {
         if (idx === 0) return "U'";
-        if (idx === 1) return "U D'";
+        if (idx === 1) return "E'";
         return "D";
       }
       if (direction === 'right') {
         if (idx === 0) return "U";
-        if (idx === 1) return "U' D";
+        if (idx === 1) return "E";
         return "D'";
       }
       if (direction === 'up') {
         if (idx === 0) return "R'";
-        if (idx === 1) return "R L'";
+        if (idx === 1) return "M";
         return "L";
       }
       if (direction === 'down') {
         if (idx === 0) return "R";
-        if (idx === 1) return "R' L";
+        if (idx === 1) return "M'";
         return "L'";
       }
     }
@@ -360,34 +335,45 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     return '';
   };
 
-  const executeSelectedMove = (direction: 'left' | 'right' | 'up' | 'down') => {
+  const executeSelectedMove = (screenDirection: 'left' | 'right' | 'up' | 'down') => {
     if (!activeLine) return;
     
-    const isHorizontal = direction === 'left' || direction === 'right';
-    const currentType = isHorizontal ? 'row' : 'col';
+    // Map screen intent to a vector
+    let dx = 0, dy = 0;
+    if (screenDirection === 'left') dx = -1;
+    if (screenDirection === 'right') dx = 1;
+    if (screenDirection === 'up') dy = -1;
+    if (screenDirection === 'down') dy = 1;
 
-    // Adapt rotation-aware directions for U and D faces
-    let targetFace = activeLine.face;
-    let targetDir = direction;
-    if (targetFace === 'U') {
-      const sector = getSector(rotY);
-      targetDir = getPhysicalDirectionU(sector, direction);
-    } else if (targetFace === 'D') {
-      const sector = getSector(rotY);
-      targetDir = getPhysicalDirectionD(sector, direction);
+    const { xVec, yVec } = getFaceLocalAxes(activeLine.face);
+
+    // Normalize axes to prevent stretching issues
+    const lenX = Math.hypot(xVec.x, xVec.y) || 1;
+    const lenY = Math.hypot(yVec.x, yVec.y) || 1;
+    const nx = { x: xVec.x / lenX, y: xVec.y / lenX };
+    const ny = { x: yVec.x / lenY, y: yVec.y / lenY };
+
+    // Project input vector onto local face axes
+    const projX = dx * nx.x + dy * nx.y;
+    const projY = dx * ny.x + dy * ny.y;
+
+    const isLocalHorizontal = Math.abs(projX) > Math.abs(projY);
+    const targetType = isLocalHorizontal ? 'row' : 'col';
+
+    // DO NOT allow invalid moves: e.g. turning a row vertically.
+    // If the projected intent does not match the active line type, ignore it!
+    if (targetType !== activeLine.type) {
+      return;
     }
 
-    // Auto update type if it changes, calculate and trigger rotation moves
-    const moveStr = calculateMove(targetFace, activeLine.index, targetDir);
+    const targetDir = isLocalHorizontal
+      ? (projX > 0 ? 'right' : 'left')
+      : (projY > 0 ? 'down' : 'up');
+
+    const moveStr = calculateMove(activeLine.face, activeLine.index, targetDir);
     if (moveStr) {
       handleTurn(moveStr);
     }
-    
-    setActiveLine({
-      face: activeLine.face,
-      type: currentType,
-      index: activeLine.index
-    });
   };
 
   // Background Drag/Tumble start (registers click/drag on free/empty space)
@@ -447,12 +433,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (dist > 10) {
       stickerHasMovedThisTouch.current = true;
       const { face, r, c } = stickerDragStart.current;
-      const isHorizontal = Math.abs(dx) > Math.abs(dy);
+
+      const { xVec, yVec } = getFaceLocalAxes(face);
+      const lenX = Math.hypot(xVec.x, xVec.y) || 1;
+      const lenY = Math.hypot(yVec.x, yVec.y) || 1;
+      const nx = { x: xVec.x / lenX, y: xVec.y / lenX };
+      const ny = { x: yVec.x / lenY, y: yVec.y / lenY };
+
+      const projX = dx * nx.x + dy * nx.y;
+      const projY = dx * ny.x + dy * ny.y;
+
+      const isLocalHorizontal = Math.abs(projX) > Math.abs(projY);
 
       setActiveLine({
         face,
-        type: isHorizontal ? 'row' : 'col',
-        index: isHorizontal ? r : c
+        type: isLocalHorizontal ? 'row' : 'col',
+        index: isLocalHorizontal ? r : c
       });
     }
   };
@@ -486,24 +482,40 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (!isStickerDragging.current) return;
     const touch = e.touches[0];
     
-    // Check if selection exists on touch face/line
     const dx = touch.clientX - stickerDragStart.current.x;
     const dy = touch.clientY - stickerDragStart.current.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist > 25 && activeLine) {
-      // Must be already selected on the active face to permit swiping
       const { face, r, c } = stickerDragStart.current;
-      const isHorizontal = Math.abs(dx) > Math.abs(dy);
+
+      const { xVec, yVec } = getFaceLocalAxes(face);
+      const lenX = Math.hypot(xVec.x, xVec.y) || 1;
+      const lenY = Math.hypot(yVec.x, yVec.y) || 1;
+      const nx = { x: xVec.x / lenX, y: xVec.y / lenX };
+      const ny = { x: yVec.x / lenY, y: yVec.y / lenY };
+
+      const projX = dx * nx.x + dy * nx.y;
+      const projY = dx * ny.x + dy * ny.y;
+
+      const isLocalHorizontal = Math.abs(projX) > Math.abs(projY);
+      const targetType = isLocalHorizontal ? 'row' : 'col';
 
       // Verify touch matches the active selection perfectly before turning
       const selectionMatchesRow = activeLine.face === face && activeLine.type === 'row' && activeLine.index === r;
       const selectionMatchesCol = activeLine.face === face && activeLine.type === 'col' && activeLine.index === c;
 
-      if ((isHorizontal && selectionMatchesRow) || (!isHorizontal && selectionMatchesCol)) {
-        isStickerDragging.current = false; // complete gesture
-        const dir = isHorizontal ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
-        executeSelectedMove(dir);
+      if ((isLocalHorizontal && selectionMatchesRow) || (!isLocalHorizontal && selectionMatchesCol)) {
+        isStickerDragging.current = false;
+
+        const targetDir = isLocalHorizontal
+          ? (projX > 0 ? 'right' : 'left')
+          : (projY > 0 ? 'down' : 'up');
+
+        const moveStr = calculateMove(activeLine.face, activeLine.index, targetDir);
+        if (moveStr) {
+          handleTurn(moveStr);
+        }
         e.preventDefault();
         return;
       }
