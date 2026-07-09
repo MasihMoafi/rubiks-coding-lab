@@ -279,18 +279,6 @@ export function isSolved(state: CubeState): boolean {
   return true;
 }
 
-// Creates a neat, beautiful checkerboard state
-export function getCheckerboardState(): CubeState {
-  const solved = getSolvedState();
-  return executeMovesString(solved, "M_fake U2 D2 R2 L2 F2 B2"); // Will do U2 D2 R2 L2 F2 B2 manually
-}
-
-export function getPerfectCheckerboard(): CubeState {
-  const solved = getSolvedState();
-  const patternMoves = "U2 D2 R2 L2 F2 B2";
-  return executeMovesString(solved, patternMoves);
-}
-
 // Help map for standard move names
 export const MOVES_INFO: Record<string, string> = {
   'U': 'Up Face (White) Clockwise',
