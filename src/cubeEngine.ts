@@ -243,14 +243,21 @@ export function generateScramble(state: CubeState, movesCount = 15): ScrambleRes
   let current = cloneState(state);
   
   let lastFace: FaceName | null = null;
+
+  // Helper for cryptographically secure randomness
+  const getSecureRandom = () => {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    return array[0] / (0xFFFFFFFF + 1);
+  };
   
   for (let i = 0; i < movesCount; i++) {
     let face: FaceName;
     do {
-      face = faces[Math.floor(Math.random() * faces.length)];
+      face = faces[Math.floor(getSecureRandom() * faces.length)];
     } while (face === lastFace); // Avoid redundant dual-turns of the same face
     
-    const modifier = modifiers[Math.floor(Math.random() * modifiers.length)];
+    const modifier = modifiers[Math.floor(getSecureRandom() * modifiers.length)];
     const moveStr = `${face}${modifier}`;
     
     current = executeMove(current, moveStr);
