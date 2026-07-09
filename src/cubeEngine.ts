@@ -209,6 +209,10 @@ export function executeMove(state: CubeState, move: CubeMove | string): CubeStat
     inverted = move.inverted;
   }
   
+  if (!['U', 'D', 'F', 'B', 'L', 'R'].includes(face)) {
+    return state;
+  }
+
   if (inverted) {
     // In Group Theory (and our convenient coder logic)
     // rotating three times clockwise is identical to rotating once counter-clockwise!
