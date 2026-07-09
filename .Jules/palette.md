@@ -1,0 +1,3 @@
+## 2026-07-09 - Focus State & ARIA Enhancements
+**Learning:** Adding clear `focus-visible` states mapping to button colors (e.g. amber ring for Scramble, indigo ring for Learning Mode) significantly improves keyboard navigation visibility without disrupting standard visual design. Missing ARIA labels on dynamic toggles (like the responsive 'Learn' button hiding text on mobile) are common a11y traps.
+**Action:** Always verify icon-only buttons and responsive buttons (text hidden on small screens) have dynamic or static `aria-label`s. Always add `focus-visible:ring-2 focus-visible:outline-none` tailored to the component's accent color to improve keyboard UX without affecting mouse users.
