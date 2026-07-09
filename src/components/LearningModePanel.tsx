@@ -15,7 +15,8 @@ export default function LearningModePanel({ onClose }: LearningModePanelProps) {
         </div>
         <button 
           onClick={onClose}
-          className="p-1 hover:bg-slate-800 rounded-md transition-colors text-slate-400 hover:text-white"
+          aria-label="Close learning mode"
+          className="p-1 hover:bg-slate-800 rounded-md transition-colors text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         >
           <X className="w-4 h-4" />
         </button>

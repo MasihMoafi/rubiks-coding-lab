@@ -79,7 +79,8 @@ export default function App() {
         <button
           type="button"
           onClick={() => setIsLearningMode(!isLearningMode)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-md font-sans text-[10px] md:text-sm font-bold border transition-all ${
+          aria-label={isLearningMode ? 'Close learning mode' : 'Open learning mode'}
+          className={`flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-md font-sans text-[10px] md:text-sm font-bold border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
             isLearningMode 
               ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' 
               : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-white'
@@ -95,7 +96,7 @@ export default function App() {
             type="button"
             id="global-scramble"
             onClick={handleScramble}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-mono text-[10px] md:text-sm font-bold rounded-md border border-amber-500/10 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-mono text-[10px] md:text-sm font-bold rounded-md border border-amber-500/10 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
           >
             <Shuffle className="w-3 h-3 md:w-4 md:h-4" /> Scramble
           </button>
@@ -105,7 +106,7 @@ export default function App() {
             id="global-undo"
             disabled={cubeStatesHistory.length === 0}
             onClick={handleUndo}
-            className={`px-3 py-1.5 md:px-4 md:py-2 font-mono text-[10px] md:text-sm font-bold rounded-md border transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 md:px-4 md:py-2 font-mono text-[10px] md:text-sm font-bold rounded-md border transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
               cubeStatesHistory.length > 0 
                 ? 'bg-amber-500/10 hover:bg-amber-500 border-amber-500/15 text-amber-300 hover:text-slate-950' 
                 : 'bg-slate-950 border-slate-900 text-slate-700 cursor-not-allowed'
@@ -118,7 +119,7 @@ export default function App() {
             type="button"
             id="global-reset"
             onClick={handleReset}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-900 hover:bg-slate-855 text-slate-400 hover:text-white font-mono text-[10px] md:text-sm font-bold rounded-md border border-slate-800 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-900 hover:bg-slate-855 text-slate-400 hover:text-white font-mono text-[10px] md:text-sm font-bold rounded-md border border-slate-800 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
           >
             <RotateCcw className="w-3 h-3 md:w-4 md:h-4" /> Reset
           </button>
