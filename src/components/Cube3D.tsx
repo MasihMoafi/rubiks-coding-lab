@@ -3,6 +3,10 @@ import { CubeState, FaceName } from '../types';
 import { COLOR_MAP } from '../cubeEngine';
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, RefreshCw, Layers, Menu, X } from 'lucide-react';
 
+// Cached audio context and buffer for performance
+let cachedAudioCtx: AudioContext | null = null;
+let cachedSnapBuffer: AudioBuffer | null = null;
+
 const getSector = (y: number): number => {
   const norm = ((y % 360) + 360) % 360;
   if (norm >= 315 || norm < 45) return 0;
@@ -127,17 +131,23 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+
+      if (!cachedAudioCtx) {
+        cachedAudioCtx = new AudioCtx();
+      }
+      const ctx = cachedAudioCtx;
       
-      const bufferSize = ctx.sampleRate * 0.08;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
+      if (!cachedSnapBuffer) {
+        const bufferSize = ctx.sampleRate * 0.08;
+        cachedSnapBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = cachedSnapBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
       }
       
       const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
+      noise.buffer = cachedSnapBuffer;
       
       const filter = ctx.createBiquadFilter();
       filter.type = 'bandpass';
