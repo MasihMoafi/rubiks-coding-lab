@@ -220,10 +220,22 @@ export function executeMove(state: CubeState, move: CubeMove | string): CubeStat
   return executeMoveClockwise(state, face);
 }
 
+// Cache for parsed move strings
+const movesStringCache = new Map<string, string[]>();
+
 // Executes a full series of moves (e.g. "R U R' U'")
 export function executeMovesString(state: CubeState, movesStr: string): CubeState {
   let current = cloneState(state);
-  const parts = movesStr.split(/\s+/).filter(Boolean);
+
+  let parts = movesStringCache.get(movesStr);
+  if (!parts) {
+    parts = movesStr.split(/\s+/).filter(Boolean);
+    if (movesStringCache.size > 1000) {
+      movesStringCache.clear();
+    }
+    movesStringCache.set(movesStr, parts);
+  }
+
   for (const part of parts) {
     current = executeMove(current, part);
   }
