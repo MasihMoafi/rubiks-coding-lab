@@ -14,7 +14,6 @@ import { RotateCcw, Shuffle, Undo2, BookOpen } from 'lucide-react';
 export default function App() {
   const [cube, setCube] = useState<CubeState>(getSolvedState());
   const [cubeStatesHistory, setCubeStatesHistory] = useState<CubeState[]>([]);
-  const [history, setHistory] = useState<string[]>([]);
   const [prevSolved, setPrevSolved] = useState<boolean>(true);
   const [triggerConfetti, setTriggerConfetti] = useState<boolean>(false);
   const [isLearningMode, setIsLearningMode] = useState<boolean>(false);
@@ -42,7 +41,6 @@ export default function App() {
       const next = executeMove(prev, moveStr);
       return next;
     });
-    setHistory(prev => [moveStr, ...prev].slice(0, 16));
   };
 
   // Undo standard action
@@ -51,14 +49,12 @@ export default function App() {
     const previous = cubeStatesHistory[cubeStatesHistory.length - 1];
     setCube(previous);
     setCubeStatesHistory(prev => prev.slice(0, prev.length - 1));
-    setHistory(prev => prev.slice(1));
   };
 
   // Resets the state of the cube to resolved initial state
   const handleReset = () => {
     setCube(getSolvedState());
     setCubeStatesHistory([]);
-    setHistory([]);
   };
 
   // Scrambles the cube
@@ -66,7 +62,6 @@ export default function App() {
     const scramble = generateScramble(cube, 10);
     setCubeStatesHistory(prev => [...prev, cube]);
     setCube(scramble.state);
-    setHistory(prev => [...scramble.moves, ...prev].slice(0, 16));
   };
 
   return (
