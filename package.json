@@ -10,8 +10,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "get-history": "node ./get_history.cjs",
-    "test": "vitest run"
+    "get-history": "node ./get_history.cjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
