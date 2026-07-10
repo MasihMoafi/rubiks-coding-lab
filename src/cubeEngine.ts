@@ -276,8 +276,10 @@ export function generateScramble(state: CubeState, movesCount = 15): ScrambleRes
 }
 
 // Checks if the cube state is solved
+const FACES: FaceName[] = ['U', 'D', 'F', 'B', 'L', 'R'];
+
 export function isSolved(state: CubeState): boolean {
-  for (const face of Object.keys(state) as FaceName[]) {
+  for (const face of FACES) {
     const targetColor = state[face][1][1]; // The center piece determines the face color!
     for (let r = 0; r < 3; r++) {
       for (let c = 0; c < 3; c++) {
