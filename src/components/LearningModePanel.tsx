@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, X, ChevronRight } from 'lucide-react';
+import { BookOpen, X } from 'lucide-react';
 
 interface LearningModePanelProps {
   onClose: () => void;
