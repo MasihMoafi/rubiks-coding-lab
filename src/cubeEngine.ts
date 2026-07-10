@@ -224,10 +224,23 @@ export function executeMove(state: CubeState, move: CubeMove | string): CubeStat
   return executeMoveClockwise(state, face);
 }
 
+// Cache for parsing move strings to avoid redundant string splitting
+const movesCache = new Map<string, string[]>();
+const MAX_CACHE_SIZE = 1000;
+
 // Executes a full series of moves (e.g. "R U R' U'")
 export function executeMovesString(state: CubeState, movesStr: string): CubeState {
   let current = cloneState(state);
-  const parts = movesStr.split(/\s+/).filter(Boolean);
+  let parts = movesCache.get(movesStr);
+  if (!parts) {
+    parts = movesStr.split(/\s+/).filter(Boolean);
+    if (movesCache.size >= MAX_CACHE_SIZE) {
+      // Basic LRU-like eviction by removing the first key (oldest inserted)
+      const firstKey = movesCache.keys().next().value;
+      if (firstKey !== undefined) movesCache.delete(firstKey);
+    }
+    movesCache.set(movesStr, parts);
+  }
   for (const part of parts) {
     current = executeMove(current, part);
   }
