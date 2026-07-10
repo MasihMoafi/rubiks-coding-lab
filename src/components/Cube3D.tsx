@@ -1,7 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { CubeState, FaceName } from '../types';
-import { COLOR_MAP } from '../cubeEngine';
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, RefreshCw, Layers, Menu, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { CubeState, FaceName } from "../types";
+import { COLOR_MAP } from "../cubeEngine";
+import {
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  CornerDownLeft,
+  RefreshCw,
+  Layers,
+  Menu,
+  X,
+} from "lucide-react";
 
 const getSector = (y: number): number => {
   const norm = ((y % 360) + 360) % 360;
@@ -11,44 +21,50 @@ const getSector = (y: number): number => {
   return 3;
 };
 
-const getPhysicalDirectionU = (sector: number, dir: 'left' | 'right' | 'up' | 'down'): 'left' | 'right' | 'up' | 'down' => {
+const getPhysicalDirectionU = (
+  sector: number,
+  dir: "left" | "right" | "up" | "down",
+): "left" | "right" | "up" | "down" => {
   if (sector === 0) return dir;
   if (sector === 1) {
-    if (dir === 'left') return 'down';
-    if (dir === 'right') return 'up';
-    if (dir === 'up') return 'left';
-    return 'right';
+    if (dir === "left") return "down";
+    if (dir === "right") return "up";
+    if (dir === "up") return "left";
+    return "right";
   }
   if (sector === 2) {
-    if (dir === 'left') return 'right';
-    if (dir === 'right') return 'left';
-    if (dir === 'up') return 'down';
-    return 'up';
+    if (dir === "left") return "right";
+    if (dir === "right") return "left";
+    if (dir === "up") return "down";
+    return "up";
   }
-  if (dir === 'left') return 'up';
-  if (dir === 'right') return 'down';
-  if (dir === 'up') return 'right';
-  return 'left';
+  if (dir === "left") return "up";
+  if (dir === "right") return "down";
+  if (dir === "up") return "right";
+  return "left";
 };
 
-const getPhysicalDirectionD = (sector: number, dir: 'left' | 'right' | 'up' | 'down'): 'left' | 'right' | 'up' | 'down' => {
+const getPhysicalDirectionD = (
+  sector: number,
+  dir: "left" | "right" | "up" | "down",
+): "left" | "right" | "up" | "down" => {
   if (sector === 0) return dir;
   if (sector === 1) {
-    if (dir === 'left') return 'up';
-    if (dir === 'right') return 'down';
-    if (dir === 'up') return 'right';
-    return 'left';
+    if (dir === "left") return "up";
+    if (dir === "right") return "down";
+    if (dir === "up") return "right";
+    return "left";
   }
   if (sector === 2) {
-    if (dir === 'left') return 'right';
-    if (dir === 'right') return 'left';
-    if (dir === 'up') return 'down';
-    return 'up';
+    if (dir === "left") return "right";
+    if (dir === "right") return "left";
+    if (dir === "up") return "down";
+    return "up";
   }
-  if (dir === 'left') return 'down';
-  if (dir === 'right') return 'up';
-  if (dir === 'up') return 'left';
-  return 'right';
+  if (dir === "left") return "down";
+  if (dir === "right") return "up";
+  if (dir === "up") return "left";
+  return "right";
 };
 
 interface Cube3DProps {
@@ -61,22 +77,31 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   const [rotX, setRotX] = useState<number>(-22);
   const [rotY, setRotY] = useState<number>(38);
   const [zoom, setZoom] = useState<number>(1.0);
-  const [stars, setStars] = useState<{ id: number; x: number; y: number; opacity: number; size: number; delay: number }[]>([]);
+  const [stars, setStars] = useState<
+    {
+      id: number;
+      x: number;
+      y: number;
+      opacity: number;
+      size: number;
+      delay: number;
+    }[]
+  >([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   // Highlight of active line (3 adjacent pieces)
   const [activeLine, setActiveLine] = useState<{
     face: FaceName;
-    type: 'row' | 'col';
+    type: "row" | "col";
     index: number; // 0, 1, or 2
   } | null>({
-    face: 'F',
-    type: 'row',
-    index: 0
+    face: "F",
+    type: "row",
+    index: 0,
   });
 
   const canvasRef = useRef<HTMLDivElement>(null);
-  
+
   // Drag and drop variables for rotating the 3D space itself
   const isDraggingBackground = useRef<boolean>(false);
   const bgDragStart = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -85,8 +110,18 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
 
   // Sticker gesture states
   const isStickerDragging = useRef<boolean>(false);
-  const stickerDragStart = useRef<{ face: FaceName; r: number; c: number; x: number; y: number }>({
-    face: 'F', r: 0, c: 0, x: 0, y: 0
+  const stickerDragStart = useRef<{
+    face: FaceName;
+    r: number;
+    c: number;
+    x: number;
+    y: number;
+  }>({
+    face: "F",
+    r: 0,
+    c: 0,
+    x: 0,
+    y: 0,
   });
   const stickerHasMovedThisTouch = useRef<boolean>(false);
 
@@ -98,7 +133,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
       y: Math.random() * 100,
       opacity: Math.random() * 0.75 + 0.25,
       size: Math.random() * 1.6 + 0.6,
-      delay: Math.random() * 4
+      delay: Math.random() * 4,
     }));
     setStars(list);
   }, []);
@@ -110,40 +145,44 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      setZoom(prev => {
+      setZoom((prev) => {
         const next = prev - e.deltaY * 0.001;
         return Math.max(0.5, Math.min(2.0, next));
       });
     };
 
-    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
     return () => {
-      canvas.removeEventListener('wheel', handleWheel);
+      canvas.removeEventListener("wheel", handleWheel);
     };
   }, []);
 
   // Snappy plastic tactile click sound with absolutely zero low-end bass
   const playSnapSound = () => {
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      
+
       const bufferSize = ctx.sampleRate * 0.08;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
         data[i] = Math.random() * 2 - 1;
       }
-      
+
       const noise = ctx.createBufferSource();
       noise.buffer = buffer;
-      
+
       const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
+      filter.type = "bandpass";
       filter.frequency.setValueAtTime(2600, ctx.currentTime);
       filter.Q.setValueAtTime(10.0, ctx.currentTime);
-      filter.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.075);
+      filter.frequency.exponentialRampToValueAtTime(
+        1400,
+        ctx.currentTime + 0.075,
+      );
 
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.05, ctx.currentTime);
@@ -155,7 +194,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
 
       const osc = ctx.createOscillator();
       const oscGain = ctx.createGain();
-      osc.type = 'triangle';
+      osc.type = "triangle";
       osc.frequency.setValueAtTime(1700, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(750, ctx.currentTime + 0.022);
 
@@ -178,7 +217,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (onMove) {
       playSnapSound();
       const moves = moveStr.split(/\s+/).filter(Boolean);
-      moves.forEach(m => onMove(m));
+      moves.forEach((m) => onMove(m));
     }
   };
 
@@ -186,30 +225,30 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape key deselects the line completely
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setActiveLine(null);
         return;
       }
 
-      if (e.key.startsWith('Arrow')) {
+      if (e.key.startsWith("Arrow")) {
         e.preventDefault();
       }
 
       const key = e.key.toLowerCase();
-      if (key === 'a' || e.key === 'ArrowLeft') {
-        executeSelectedMove('left');
-      } else if (key === 'd' || e.key === 'ArrowRight') {
-        executeSelectedMove('right');
-      } else if (key === 'w' || e.key === 'ArrowUp') {
-        executeSelectedMove('up');
-      } else if (key === 's' || e.key === 'ArrowDown') {
-        executeSelectedMove('down');
+      if (key === "a" || e.key === "ArrowLeft") {
+        executeSelectedMove("left");
+      } else if (key === "d" || e.key === "ArrowRight") {
+        executeSelectedMove("right");
+      } else if (key === "w" || e.key === "ArrowUp") {
+        executeSelectedMove("up");
+      } else if (key === "s" || e.key === "ArrowDown") {
+        executeSelectedMove("down");
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [activeLine]);
 
@@ -217,162 +256,162 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   const calculateMove = (
     face: FaceName,
     idx: number,
-    direction: 'left' | 'right' | 'up' | 'down'
+    direction: "left" | "right" | "up" | "down",
   ): string => {
-    if (face === 'F') {
-      if (direction === 'left') {
+    if (face === "F") {
+      if (direction === "left") {
         if (idx === 0) return "U";
         if (idx === 1) return "U' D";
         return "D'";
       }
-      if (direction === 'right') {
+      if (direction === "right") {
         if (idx === 0) return "U'";
         if (idx === 1) return "U D'";
         return "D";
       }
-      if (direction === 'up') {
+      if (direction === "up") {
         if (idx === 0) return "L'";
         if (idx === 1) return "L R'";
         return "R";
       }
-      if (direction === 'down') {
+      if (direction === "down") {
         if (idx === 0) return "L";
         if (idx === 1) return "L' R";
         return "R'";
       }
     }
 
-    if (face === 'U') {
-      if (direction === 'left') {
+    if (face === "U") {
+      if (direction === "left") {
         if (idx === 0) return "B";
         if (idx === 1) return "B' F";
         return "F'";
       }
-      if (direction === 'right') {
+      if (direction === "right") {
         if (idx === 0) return "B'";
         if (idx === 1) return "B F'";
         return "F";
       }
-      if (direction === 'up') {
+      if (direction === "up") {
         if (idx === 0) return "L'";
         if (idx === 1) return "L R'";
         return "R";
       }
-      if (direction === 'down') {
+      if (direction === "down") {
         if (idx === 0) return "L";
         if (idx === 1) return "L' R";
         return "R'";
       }
     }
 
-    if (face === 'R') {
-      if (direction === 'left') {
+    if (face === "R") {
+      if (direction === "left") {
         if (idx === 0) return "U";
         if (idx === 1) return "U' D";
         return "D'";
       }
-      if (direction === 'right') {
+      if (direction === "right") {
         if (idx === 0) return "U'";
         if (idx === 1) return "U D'";
         return "D";
       }
-      if (direction === 'up') {
+      if (direction === "up") {
         if (idx === 0) return "F'";
         if (idx === 1) return "F B'";
         return "B";
       }
-      if (direction === 'down') {
+      if (direction === "down") {
         if (idx === 0) return "F";
         if (idx === 1) return "F' B";
         return "B'";
       }
     }
 
-    if (face === 'L') {
-      if (direction === 'left') {
+    if (face === "L") {
+      if (direction === "left") {
         if (idx === 0) return "U";
         if (idx === 1) return "U' D";
         return "D'";
       }
-      if (direction === 'right') {
+      if (direction === "right") {
         if (idx === 0) return "U'";
         if (idx === 1) return "U D'";
         return "D";
       }
-      if (direction === 'up') {
+      if (direction === "up") {
         if (idx === 0) return "B'";
         if (idx === 1) return "B F'";
         return "F";
       }
-      if (direction === 'down') {
+      if (direction === "down") {
         if (idx === 0) return "B";
         if (idx === 1) return "B' F";
         return "F'";
       }
     }
 
-    if (face === 'D') {
-      if (direction === 'left') {
+    if (face === "D") {
+      if (direction === "left") {
         if (idx === 0) return "F";
         if (idx === 1) return "F' B";
         return "B'";
       }
-      if (direction === 'right') {
+      if (direction === "right") {
         if (idx === 0) return "F'";
         if (idx === 1) return "F B'";
         return "B";
       }
-      if (direction === 'up') {
+      if (direction === "up") {
         if (idx === 0) return "L'";
         if (idx === 1) return "L R'";
         return "R";
       }
-      if (direction === 'down') {
+      if (direction === "down") {
         if (idx === 0) return "L";
         if (idx === 1) return "L' R";
         return "R'";
       }
     }
 
-    if (face === 'B') {
-      if (direction === 'left') {
+    if (face === "B") {
+      if (direction === "left") {
         if (idx === 0) return "U'";
         if (idx === 1) return "U D'";
         return "D";
       }
-      if (direction === 'right') {
+      if (direction === "right") {
         if (idx === 0) return "U";
         if (idx === 1) return "U' D";
         return "D'";
       }
-      if (direction === 'up') {
+      if (direction === "up") {
         if (idx === 0) return "R'";
         if (idx === 1) return "R L'";
         return "L";
       }
-      if (direction === 'down') {
+      if (direction === "down") {
         if (idx === 0) return "R";
         if (idx === 1) return "R' L";
         return "L'";
       }
     }
 
-    return '';
+    return "";
   };
 
-  const executeSelectedMove = (direction: 'left' | 'right' | 'up' | 'down') => {
+  const executeSelectedMove = (direction: "left" | "right" | "up" | "down") => {
     if (!activeLine) return;
-    
-    const isHorizontal = direction === 'left' || direction === 'right';
-    const currentType = isHorizontal ? 'row' : 'col';
+
+    const isHorizontal = direction === "left" || direction === "right";
+    const currentType = isHorizontal ? "row" : "col";
 
     // Adapt rotation-aware directions for U and D faces
     let targetFace = activeLine.face;
     let targetDir = direction;
-    if (targetFace === 'U') {
+    if (targetFace === "U") {
       const sector = getSector(rotY);
       targetDir = getPhysicalDirectionU(sector, direction);
-    } else if (targetFace === 'D') {
+    } else if (targetFace === "D") {
       const sector = getSector(rotY);
       targetDir = getPhysicalDirectionD(sector, direction);
     }
@@ -382,16 +421,20 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     if (moveStr) {
       handleTurn(moveStr);
     }
-    
+
     setActiveLine({
       face: activeLine.face,
       type: currentType,
-      index: activeLine.index
+      index: activeLine.index,
     });
   };
 
   // Background Drag/Tumble start (registers click/drag on free/empty space)
-  const handleBgStart = (clientX: number, clientY: number, isSticker: boolean) => {
+  const handleBgStart = (
+    clientX: number,
+    clientY: number,
+    isSticker: boolean,
+  ) => {
     if (isSticker) return; // ignore sticker clicks
 
     isDraggingBackground.current = true;
@@ -405,15 +448,17 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
 
     const dx = clientX - bgLastPos.current.x;
     const dy = clientY - bgLastPos.current.y;
-    
+
     // Accumulate displacement to distinguish simple click/tap vs long drag
     const startDx = clientX - bgDragStart.current.x;
     const startDy = clientY - bgDragStart.current.y;
-    bgDragDisplacement.current = Math.sqrt(startDx * startDx + startDy * startDy);
+    bgDragDisplacement.current = Math.sqrt(
+      startDx * startDx + startDy * startDy,
+    );
 
     // Free Cam behavior
-    setRotY(prev => prev + dx * 0.45);
-    setRotX(prev => prev - dy * 0.45);
+    setRotY((prev) => prev + dx * 0.45);
+    setRotX((prev) => prev - dy * 0.45);
 
     bgLastPos.current = { x: clientX, y: clientY };
   };
@@ -430,7 +475,13 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   };
 
   // Sticker selection actions (only select with mouse drag/click)
-  const handleStickerStart = (face: FaceName, r: number, c: number, clientX: number, clientY: number) => {
+  const handleStickerStart = (
+    face: FaceName,
+    r: number,
+    c: number,
+    clientX: number,
+    clientY: number,
+  ) => {
     isStickerDragging.current = true;
     stickerDragStart.current = { face, r, c, x: clientX, y: clientY };
     stickerHasMovedThisTouch.current = false;
@@ -451,8 +502,8 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
 
       setActiveLine({
         face,
-        type: isHorizontal ? 'row' : 'col',
-        index: isHorizontal ? r : c
+        type: isHorizontal ? "row" : "col",
+        index: isHorizontal ? r : c,
       });
     }
   };
@@ -460,16 +511,21 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   const handleStickerEnd = (e: React.MouseEvent | React.TouchEvent) => {
     if (isStickerDragging.current) {
       isStickerDragging.current = false;
-      
+
       // If it was a clean click without major dragging, select/toggle row/col segment
       if (!stickerHasMovedThisTouch.current) {
         const { face, r, c } = stickerDragStart.current;
-        setActiveLine(prev => {
-          if (prev && prev.face === face && prev.index === r && prev.type === 'row') {
+        setActiveLine((prev) => {
+          if (
+            prev &&
+            prev.face === face &&
+            prev.index === r &&
+            prev.type === "row"
+          ) {
             // cycle to column selection at the same point
-            return { face, type: 'col', index: c };
+            return { face, type: "col", index: c };
           }
-          return { face, type: 'row', index: r };
+          return { face, type: "row", index: r };
         });
       }
     }
@@ -477,7 +533,12 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
 
   // Mobile Swipe-to-turn touch gesture implementation:
   // "one must first select the same method I said earlier; and only if their selection is complete they can swipe"
-  const handleTouchStartSticker = (face: FaceName, r: number, c: number, e: React.TouchEvent) => {
+  const handleTouchStartSticker = (
+    face: FaceName,
+    r: number,
+    c: number,
+    e: React.TouchEvent,
+  ) => {
     const touch = e.touches[0];
     handleStickerStart(face, r, c, touch.clientX, touch.clientY);
   };
@@ -485,7 +546,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
   const handleTouchMoveSticker = (e: React.TouchEvent) => {
     if (!isStickerDragging.current) return;
     const touch = e.touches[0];
-    
+
     // Check if selection exists on touch face/line
     const dx = touch.clientX - stickerDragStart.current.x;
     const dy = touch.clientY - stickerDragStart.current.y;
@@ -497,12 +558,27 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
       const isHorizontal = Math.abs(dx) > Math.abs(dy);
 
       // Verify touch matches the active selection perfectly before turning
-      const selectionMatchesRow = activeLine.face === face && activeLine.type === 'row' && activeLine.index === r;
-      const selectionMatchesCol = activeLine.face === face && activeLine.type === 'col' && activeLine.index === c;
+      const selectionMatchesRow =
+        activeLine.face === face &&
+        activeLine.type === "row" &&
+        activeLine.index === r;
+      const selectionMatchesCol =
+        activeLine.face === face &&
+        activeLine.type === "col" &&
+        activeLine.index === c;
 
-      if ((isHorizontal && selectionMatchesRow) || (!isHorizontal && selectionMatchesCol)) {
+      if (
+        (isHorizontal && selectionMatchesRow) ||
+        (!isHorizontal && selectionMatchesCol)
+      ) {
         isStickerDragging.current = false; // complete gesture
-        const dir = isHorizontal ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+        const dir = isHorizontal
+          ? dx > 0
+            ? "right"
+            : "left"
+          : dy > 0
+            ? "down"
+            : "up";
         executeSelectedMove(dir);
         e.preventDefault();
         return;
@@ -526,12 +602,12 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
       }
     };
 
-    window.addEventListener('mousemove', handleGlobalMouseMove);
-    window.addEventListener('mouseup', handleGlobalMouseUp);
+    window.addEventListener("mousemove", handleGlobalMouseMove);
+    window.addEventListener("mouseup", handleGlobalMouseUp);
 
     return () => {
-      window.removeEventListener('mousemove', handleGlobalMouseMove);
-      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      window.removeEventListener("mousemove", handleGlobalMouseMove);
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
     };
   }, [activeLine]);
 
@@ -551,7 +627,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
     const faceMatrix = cubeState[face];
 
     return (
-      <div 
+      <div
         id={`face-${face}`}
         className="absolute w-[155px] h-[155px] grid grid-cols-3 gap-[3.5px] bg-slate-950 p-[4.5px] rounded-2xl select-none shadow-2xl border border-slate-900"
         onMouseDown={(e) => {
@@ -560,19 +636,19 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
         onTouchStart={(e) => {
           e.stopPropagation();
         }}
-        style={{ 
+        style={{
           transform: faceTransforms[face],
-          backfaceVisibility: 'hidden',
-          WebkitBackfaceVisibility: 'hidden',
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
         }}
       >
-        {faceMatrix.map((row, rIdx) => 
+        {faceMatrix.map((row, rIdx) =>
           row.map((color, cIdx) => {
-            const isStickerInActiveLine = 
+            const isStickerInActiveLine =
               activeLine !== null &&
-              activeLine.face === face && 
-              ((activeLine.type === 'row' && rIdx === activeLine.index) || 
-               (activeLine.type === 'col' && cIdx === activeLine.index));
+              activeLine.face === face &&
+              ((activeLine.type === "row" && rIdx === activeLine.index) ||
+                (activeLine.type === "col" && cIdx === activeLine.index));
 
             return (
               <div
@@ -590,14 +666,15 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
                 onTouchMove={handleTouchMoveSticker}
                 onTouchEnd={handleStickerEnd}
                 className="cube-sticker w-[46px] h-[46px] rounded-[7px] relative flex items-center justify-center cursor-grab active:cursor-grabbing hover:brightness-105 transition-all duration-200"
-                style={{ 
+                style={{
                   backgroundColor: COLOR_MAP[color],
-                  boxShadow: 'inset 0 3px 5px rgba(255,255,255,0.2), inset 0 -3px 5px rgba(0,0,0,0.25)' 
+                  boxShadow:
+                    "inset 0 3px 5px rgba(255,255,255,0.2), inset 0 -3px 5px rgba(0,0,0,0.25)",
                 }}
               >
                 {/* Physical shine highlight */}
                 <div className="absolute inset-x-1 top-1 h-[40%] bg-gradient-to-b from-white/20 to-transparent rounded-t-[5px] pointer-events-none" />
-                
+
                 {/* PREMIUM DARK GLOWING TEAL SELECTION COVER (between blue and green as requested) */}
                 {isStickerInActiveLine && (
                   <div className="absolute inset-0 rounded-[7px] bg-teal-900/35 border-[3.5px] border-teal-500 shadow-[0_0_14px_rgba(20,184,166,0.9)] animate-pulse pointer-events-none z-10" />
@@ -610,7 +687,7 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
                 )}
               </div>
             );
-          })
+          }),
         )}
       </div>
     );
@@ -618,7 +695,6 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
 
   return (
     <div className="w-full h-full absolute inset-0 flex items-center justify-center select-none overflow-hidden touch-none">
-      
       {/* Mobile Hamburger Menu Trigger */}
       <div className="absolute top-4 left-4 z-40 md:hidden">
         <button
@@ -627,34 +703,44 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 bg-slate-900/90 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-white rounded-lg transition-all shadow-md cursor-pointer flex items-center justify-center"
         >
-          {isMobileMenuOpen ? <X className="w-5 h-5 text-teal-400" /> : <Menu className="w-5 h-5" />}
+          {isMobileMenuOpen ? (
+            <X className="w-5 h-5 text-teal-400" />
+          ) : (
+            <Menu className="w-5 h-5" />
+          )}
         </button>
       </div>
 
       {/* Responsive Left Controls Panel */}
-      <div className={`
+      <div
+        className={`
         flex flex-col items-center gap-3 bg-slate-900/85 backdrop-blur-md p-3 rounded-2xl border border-slate-950/80 w-[124px] shrink-0 shadow-2xl absolute transition-all duration-300 z-30
-        ${isMobileMenuOpen 
-          ? 'left-4 top-16 opacity-100 scale-100 pointer-events-auto' 
-          : 'max-md:-left-42 max-md:opacity-0 max-md:scale-95 max-md:pointer-events-none left-4 top-4'
+        ${
+          isMobileMenuOpen
+            ? "left-4 top-16 opacity-100 scale-100 pointer-events-auto"
+            : "max-md:-left-42 max-md:opacity-0 max-md:scale-95 max-md:pointer-events-none left-4 top-4"
         }
         md:flex md:left-4 md:top-4 md:opacity-100 md:scale-100 md:pointer-events-auto
-      `}>
-        
+      `}
+      >
         {/* Compact Click-to-twist Arrow Box */}
         <div className="grid grid-cols-3 gap-1 px-1 justify-items-center">
-          
           <div />
           <button
             type="button"
             id="btn-spin-up"
             aria-label="Spin up"
-            disabled={!activeLine || activeLine.type !== 'col'}
-            onClick={() => executeSelectedMove('up')}
+            disabled={!activeLine || activeLine.type !== "col"}
+            title={
+              !activeLine || activeLine.type !== "col"
+                ? "Select a column first"
+                : "Spin up"
+            }
+            onClick={() => executeSelectedMove("up")}
             className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${
-              activeLine && activeLine.type === 'col'
-                ? 'border-teal-500/20 bg-slate-950 hover:bg-teal-500 hover:text-slate-950 text-teal-400 cursor-pointer shadow-[0_0_8px_rgba(20,184,166,0.3)]' 
-                : 'border-slate-800/40 bg-slate-955 text-slate-700/40 cursor-not-allowed opacity-15'
+              activeLine && activeLine.type === "col"
+                ? "border-teal-500/20 bg-slate-950 hover:bg-teal-500 hover:text-slate-950 text-teal-400 cursor-pointer shadow-[0_0_8px_rgba(20,184,166,0.3)]"
+                : "border-slate-800/40 bg-slate-955 text-slate-700/40 cursor-not-allowed opacity-15"
             }`}
           >
             <ArrowUp className="w-4 h-4" />
@@ -665,17 +751,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
             type="button"
             id="btn-spin-left"
             aria-label="Spin left"
-            disabled={!activeLine || activeLine.type !== 'row'}
-            onClick={() => executeSelectedMove('left')}
+            disabled={!activeLine || activeLine.type !== "row"}
+            title={
+              !activeLine || activeLine.type !== "row"
+                ? "Select a row first"
+                : "Spin left"
+            }
+            onClick={() => executeSelectedMove("left")}
             className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${
-              activeLine && activeLine.type === 'row'
-                ? 'border-teal-500/20 bg-slate-950 hover:bg-teal-500 hover:text-slate-950 text-teal-400 cursor-pointer shadow-[0_0_8px_rgba(20,184,166,0.3)]' 
-                : 'border-slate-800/40 bg-slate-955 text-slate-700/40 cursor-not-allowed opacity-15'
+              activeLine && activeLine.type === "row"
+                ? "border-teal-500/20 bg-slate-950 hover:bg-teal-500 hover:text-slate-950 text-teal-400 cursor-pointer shadow-[0_0_8px_rgba(20,184,166,0.3)]"
+                : "border-slate-800/40 bg-slate-955 text-slate-700/40 cursor-not-allowed opacity-15"
             }`}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          
+
           <div className="w-9 h-9 flex items-center justify-center bg-slate-950/40 rounded-lg text-slate-655">
             <Layers className="w-3.5 h-3.5 text-teal-500/60" />
           </div>
@@ -684,12 +775,17 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
             type="button"
             id="btn-spin-right"
             aria-label="Spin right"
-            disabled={!activeLine || activeLine.type !== 'row'}
-            onClick={() => executeSelectedMove('right')}
+            disabled={!activeLine || activeLine.type !== "row"}
+            title={
+              !activeLine || activeLine.type !== "row"
+                ? "Select a row first"
+                : "Spin right"
+            }
+            onClick={() => executeSelectedMove("right")}
             className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${
-              activeLine && activeLine.type === 'row'
-                ? 'border-teal-500/20 bg-slate-950 hover:bg-teal-500 hover:text-slate-950 text-teal-400 cursor-pointer shadow-[0_0_8px_rgba(20,184,166,0.3)]' 
-                : 'border-slate-800/40 bg-slate-955 text-slate-700/40 cursor-not-allowed opacity-15'
+              activeLine && activeLine.type === "row"
+                ? "border-teal-500/20 bg-slate-950 hover:bg-teal-500 hover:text-slate-950 text-teal-400 cursor-pointer shadow-[0_0_8px_rgba(20,184,166,0.3)]"
+                : "border-slate-800/40 bg-slate-955 text-slate-700/40 cursor-not-allowed opacity-15"
             }`}
           >
             <ArrowRight className="w-4 h-4" />
@@ -700,18 +796,22 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
             type="button"
             id="btn-spin-down"
             aria-label="Spin down"
-            disabled={!activeLine || activeLine.type !== 'col'}
-            onClick={() => executeSelectedMove('down')}
+            disabled={!activeLine || activeLine.type !== "col"}
+            title={
+              !activeLine || activeLine.type !== "col"
+                ? "Select a column first"
+                : "Spin down"
+            }
+            onClick={() => executeSelectedMove("down")}
             className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-all ${
-              activeLine && activeLine.type === 'col'
-                ? 'border-teal-500/20 bg-slate-950 hover:bg-teal-500 hover:text-slate-950 text-teal-400 cursor-pointer shadow-[0_0_8px_rgba(20,184,166,0.3)]' 
-                : 'border-slate-800/40 bg-slate-955 text-slate-700/40 cursor-not-allowed opacity-15'
+              activeLine && activeLine.type === "col"
+                ? "border-teal-500/20 bg-slate-950 hover:bg-teal-500 hover:text-slate-950 text-teal-400 cursor-pointer shadow-[0_0_8px_rgba(20,184,166,0.3)]"
+                : "border-slate-800/40 bg-slate-955 text-slate-700/40 cursor-not-allowed opacity-15"
             }`}
           >
             <ArrowDown className="w-4 h-4" />
           </button>
           <div />
-
         </div>
 
         {/* Alignment Swapper - Zero texts */}
@@ -719,23 +819,27 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
           type="button"
           id="toggle-slice-alignment"
           disabled={!activeLine}
+          title={
+            !activeLine
+              ? "Select a block to toggle alignment"
+              : "Toggle alignment"
+          }
           onClick={() => {
             if (activeLine) {
               setActiveLine({
                 ...activeLine,
-                type: activeLine.type === 'row' ? 'col' : 'row'
+                type: activeLine.type === "row" ? "col" : "row",
               });
             }
           }}
           className={`w-full py-1.5 font-mono text-[9px] uppercase font-black rounded border transition-all flex items-center justify-center gap-1 ${
-            activeLine 
-              ? 'bg-slate-950 hover:bg-slate-900 text-slate-350 hover:text-white border-slate-800 cursor-pointer' 
-              : 'bg-slate-955 border-slate-900 text-slate-700 cursor-not-allowed opacity-35'
+            activeLine
+              ? "bg-slate-950 hover:bg-slate-900 text-slate-350 hover:text-white border-slate-800 cursor-pointer"
+              : "bg-slate-955 border-slate-900 text-slate-700 cursor-not-allowed opacity-35"
           }`}
-          title="Toggle alignment"
         >
           <RefreshCw className="w-2.5 h-2.5 text-teal-500" />
-          {activeLine ? (activeLine.type === 'row' ? 'Row' : 'Col') : 'Line'}
+          {activeLine ? (activeLine.type === "row" ? "Row" : "Col") : "Line"}
         </button>
 
         {/* Angle View Preset - Side-by-Side Clean Square Buttons */}
@@ -765,11 +869,10 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
             3D
           </button>
         </div>
-
       </div>
 
       {/* Background/Full-screen Sandbox Space */}
-      <div 
+      <div
         ref={canvasRef}
         onMouseDown={(e) => handleBgStart(e.clientX, e.clientY, false)}
         onTouchStart={(e) => {
@@ -782,12 +885,11 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
         }}
         onTouchEnd={handleBgEnd}
         className="absolute inset-0 w-full h-full flex items-center justify-center select-none overflow-hidden touch-none cursor-grab active:cursor-grabbing z-0"
-        style={{ perspective: '800px' }}
+        style={{ perspective: "800px" }}
       >
-        
         {/* GALACTIC MODE space stars backdrop */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-          {stars.map(s => (
+          {stars.map((s) => (
             <div
               key={s.id}
               className="absolute bg-slate-100 rounded-full animate-pulse pointer-events-none"
@@ -798,14 +900,14 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
                 height: `${s.size}px`,
                 opacity: s.opacity,
                 animationDelay: `${s.delay}s`,
-                animationDuration: `${2.5 + (s.id % 5) * 2.5}s`
+                animationDuration: `${2.5 + (s.id % 5) * 2.5}s`,
               }}
             />
           ))}
         </div>
 
         {/* Interactive CSS3D Rubik core model */}
-        <div 
+        <div
           id="cube-3d-model"
           className="relative w-[155px] h-[155px] z-10"
           onMouseDown={(e) => {
@@ -815,20 +917,19 @@ export default function Cube3D({ cubeState, onMove }: Cube3DProps) {
             e.stopPropagation();
           }}
           style={{
-            transformStyle: 'preserve-3d',
+            transformStyle: "preserve-3d",
             transform: `scale(${zoom}) rotateX(${rotX}deg) rotateY(${rotY}deg)`,
-            transition: 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+            transition: "transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)",
           }}
         >
-          {renderFaceStickers('U')}
-          {renderFaceStickers('D')}
-          {renderFaceStickers('F')}
-          {renderFaceStickers('B')}
-          {renderFaceStickers('L')}
-          {renderFaceStickers('R')}
+          {renderFaceStickers("U")}
+          {renderFaceStickers("D")}
+          {renderFaceStickers("F")}
+          {renderFaceStickers("B")}
+          {renderFaceStickers("L")}
+          {renderFaceStickers("R")}
         </div>
       </div>
-
     </div>
   );
 }
