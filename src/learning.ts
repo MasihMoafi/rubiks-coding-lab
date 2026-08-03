@@ -120,13 +120,14 @@ function isExact(program: ParsedProgram, moves: string[]): boolean {
 }
 
 const RIGHT_HAND = ['R', 'U', "R'", "U'"];
+const RIGHT_HAND_INVERSE = ['U', 'R', "U'", "R'"];
 
 export const INTERACTIVE_LESSONS: InteractiveLesson[] = [
   {
     id: 'move',
     concept: 'MOVE',
-    title: 'One instruction',
-    prompt: 'Run R. The right face turns once.',
+    title: 'Turn one face',
+    prompt: 'Run R. Watch only the right face and its edge pieces.',
     example: 'R',
     initialMoves: [],
     success: 'One command changed the cube state.',
@@ -136,7 +137,7 @@ export const INTERACTIVE_LESSONS: InteractiveLesson[] = [
   {
     id: 'inverse',
     concept: 'INVERSE',
-    title: 'Undo with code',
+    title: 'Undo a turn',
     prompt: "The cube starts after R. Run R' to reverse it.",
     example: "R'",
     initialMoves: ['R'],
@@ -146,20 +147,20 @@ export const INTERACTIVE_LESSONS: InteractiveLesson[] = [
   },
   {
     id: 'sequence',
-    concept: 'SEQUENCE',
-    title: 'Order becomes an algorithm',
-    prompt: "Run R U R' U' as one ordered sequence.",
+    concept: 'ALGORITHM',
+    title: 'Use the right-hand algorithm',
+    prompt: "The cube is one algorithm away. Run R U R' U' to restore it.",
     example: "R U R' U'",
-    initialMoves: [],
-    success: 'Four instructions produced one repeatable result.',
-    hint: 'Commands run from left to right.',
-    validate: (program) => isExact(program, RIGHT_HAND),
+    initialMoves: RIGHT_HAND_INVERSE,
+    success: 'The right-hand algorithm restored the cube.',
+    hint: 'Commands run left to right. Order is part of the algorithm.',
+    validate: (program, result) => isExact(program, RIGHT_HAND) && isSolved(result),
   },
   {
     id: 'loop',
     concept: 'LOOP',
-    title: 'Make repetition visible',
-    prompt: 'Repeat the sequence six times. The cube returns home.',
+    title: 'Find the cycle',
+    prompt: 'Repeat the right-hand algorithm six times. The cube returns home.',
     example: "repeat(6) { R U R' U' }",
     initialMoves: [],
     success: 'The loop ran 24 moves and returned to the start.',
