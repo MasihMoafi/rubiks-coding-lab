@@ -22,19 +22,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
-      - name: Reconcile dependency lock
-        run: npm install --package-lock-only --ignore-scripts
+      - name: Install pnpm
+        run: npm install --global pnpm@10
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Test cube and learning engines
-        run: npm test
+        run: pnpm test
 
       - name: Type-check
-        run: npm run lint
+        run: pnpm lint
 
       - name: Build production app
-        run: npm run build
+        run: pnpm build
