@@ -1,116 +1,79 @@
 ---
-name: Rubik's Coding Lab
-type: interactive React sandbox for exploring cube state, moves, and algorithm logic
+name: Rubik Lab
+type: interactive Rubik and programming learning app
 ---
 
-# Rubik's Coding Lab
+# Rubik Lab
 
-**A Rubik's Cube is a compact way to make state transitions and reversible algorithms visible.**
+**Learn algorithms by watching every instruction change a real cube state.**
 
-Rubik's Coding Lab is a React/Vite sandbox for manipulating a 3D cube, inspecting move history, scrambling/restoring state, and experimenting with cube algorithms. The core cube-state engine has automated Vitest coverage for cloning, solved-state detection, moves, and inverse moves.
+Rubik Lab is a minimal React/Vite learning environment where Rubik notation is also a tiny programming language. The app teaches a face move, its inverse, the right-hand algorithm, and repetition through short challenges with immediate visual feedback.
 
-## Quick start
+## Run it
 
 ```bash
 git clone https://github.com/MasihMoafi/rubiks-coding-lab.git
 cd rubiks-coding-lab
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-Vite starts the local development server on port `3000` according to the current package script.
+The local app runs on port `3000`.
 
-Run the cube-engine tests:
+## Learning flow
 
-```bash
-npm test
-```
+Each lesson has one visible cube, one command field, and one goal:
 
-Expected result: the app opens an interactive cube UI; the test command runs the checked-in `src/cubeEngine.test.ts` suite.
+1. `R` — change state with one instruction.
+2. `R'` — reverse the move with its inverse.
+3. `R U R' U'` — restore a prepared cube using the right-hand algorithm.
+4. `repeat(6) { R U R' U' }` — expose the algorithm's cycle with a loop.
 
-## The problem
+Programs animate one move at a time. Failed attempts restart from the lesson's defined state, so every retry is deterministic.
 
-Permutation/state algorithms are easier to reason about when the state change is visible. A Rubik's Cube gives every operation an immediate spatial consequence and every inverse move a concrete correctness check.
+## Free play
 
-This project uses that property as an interactive coding/algorithm sandbox rather than presenting the cube only as a puzzle game.
+Free play uses the same notation learned in the lessons. Direct controls expose clockwise and counter-clockwise forms of `U`, `D`, `F`, `B`, `L`, and `R`, with scramble, undo, reset, and solved-state detection.
 
-## How it works
+## Command language
+
+A program can be a move sequence:
 
 ```text
-cube state
-   ↓
-move / inverse move / scramble
-   ↓
-cube-state engine
-   ↓
-React UI + motion
-   ↓
-3D visual state + history
+R U R' U'
 ```
 
-Current stack:
+or a bounded repeat block:
 
-- React 19;
-- Vite;
-- TypeScript;
-- Tailwind CSS;
-- Motion;
-- Lucide icons;
-- Vitest for the cube engine.
+```text
+repeat(6) { R U R' U' }
+```
 
-## Current state
+The parser normalizes common apostrophe characters, rejects unknown moves, and caps expanded programs.
 
-### Implemented
-
-- Interactive cube manipulation UI.
-- Cube-state engine with solved-state logic.
-- Move execution and inverse moves.
-- Move history / undo-oriented state handling.
-- Scramble/algorithm interactions represented in the app.
-- Vitest coverage for core state cloning and solved-state behavior.
-
-### Implemented but still under acceptance
-
-- The repository has unit coverage for core engine behavior, not comprehensive browser/UI interaction tests.
-- Responsive and interaction quality still require manual browser verification.
-
-### Planned
-
-The existing README described possible educational extensions such as coding tutorials, multiplayer learning, and other algorithm visualizers. Those are ideas, not working features, and are not presented as current product capability.
-
-### Intentionally unsupported / not claimed
-
-- No claim of a complete Rubik's Cube teaching curriculum.
-- No multiplayer implementation documented as shipped.
-- No claim that additional chess/algorithm visualizers exist today.
-
-## What sets this project apart
-
-The useful design choice is coupling an algorithmic state engine to a visual object where mistakes are obvious: a move followed by its inverse should restore the solved state.
-
-That behavior is also directly tested in `src/cubeEngine.test.ts`.
-
-## Evals and test series
-
-Run:
+## Verification
 
 ```bash
-npm test
-npm run lint
-npm run build
+pnpm test
+pnpm lint
+pnpm build
 ```
 
-The checked-in Vitest suite verifies, among other cases:
+The automated checks cover:
 
-- state cloning produces independent deep copies;
-- a fresh cube is solved;
-- a single move makes it unsolved;
-- a move followed by its inverse returns it to solved state.
+- cube cloning, solved-state detection, moves, and inverses;
+- command parsing, normalization, repetition, and invalid input;
+- every lesson example against its defined initial cube state;
+- production TypeScript and Vite builds;
+- a Playwright desktop run completing all lessons, including wrong-answer recovery;
+- mobile viewport containment and first-lesson completion;
+- free-play move, undo, scramble, and reset controls;
+- screenshots and a machine-readable QA report uploaded by GitHub Actions.
 
-What these tests prove: correctness of the covered cube-engine invariants.
+## Stack
 
-What they do not prove: full gesture behavior, visual correctness, accessibility, or mobile interaction quality.
+React 19, TypeScript, Vite, Tailwind CSS, Vitest, Playwright, and pnpm.
 
-## Future development
+## Scope
 
-Before expanding into a broader learning platform, the useful next step is browser-level verification of the existing interactions and a small set of explicit educational flows around the cube engine.
+The current curriculum is deliberately small and complete rather than broad and passive. Chess and additional algorithm visualizers remain future modules; they are not presented as shipped features.
