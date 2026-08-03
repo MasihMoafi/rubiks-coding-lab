@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseProgram } from './learning';
+import { executeMovesString, getSolvedState } from './cubeEngine';
+import { INTERACTIVE_LESSONS, parseProgram } from './learning';
 
 describe('parseProgram', () => {
   it('parses a move sequence', () => {
@@ -51,4 +52,26 @@ describe('parseProgram', () => {
 
     expect(result.ok).toBe(false);
   });
+});
+
+describe('interactive curriculum', () => {
+  it.each(INTERACTIVE_LESSONS.map((lesson) => [lesson.id, lesson] as const))(
+    '%s example passes from its defined cube state',
+    (_id, lesson) => {
+      const parsed = parseProgram(lesson.example);
+      expect(parsed.ok).toBe(true);
+      if ('error' in parsed) return;
+
+      const start = executeMovesString(
+        getSolvedState(),
+        lesson.initialMoves.join(' '),
+      );
+      const result = executeMovesString(
+        start,
+        parsed.program.moves.join(' '),
+      );
+
+      expect(lesson.validate(parsed.program, result)).toBe(true);
+    },
+  );
 });
