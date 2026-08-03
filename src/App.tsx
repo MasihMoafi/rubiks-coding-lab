@@ -1,149 +1,227 @@
-import React, { useState, useEffect } from "react";
-import { CubeState } from "./types";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { CubeState } from './types';
 import {
-  getSolvedState,
   executeMove,
   generateScramble,
+  getSolvedState,
   isSolved,
-} from "./cubeEngine";
-import Cube3D from "./components/Cube3D";
-import ConfettiOverlay from "./components/ConfettiOverlay";
-import LearningModePanel from "./components/LearningModePanel";
-import { RotateCcw, Shuffle, Undo2, BookOpen } from "lucide-react";
+} from './cubeEngine';
+import Cube3D from './components/Cube3D';
+import ConfettiOverlay from './components/ConfettiOverlay';
+import LearningModePanel from './components/LearningModePanel';
+import { BookOpen, RotateCcw, Shuffle, Undo2 } from 'lucide-react';
+
+const MOVE_DELAY_MS = 105;
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
 
 export default function App() {
   const [cube, setCube] = useState<CubeState>(getSolvedState());
   const [cubeStatesHistory, setCubeStatesHistory] = useState<CubeState[]>([]);
-  const [prevSolved, setPrevSolved] = useState<boolean>(true);
-  const [triggerConfetti, setTriggerConfetti] = useState<boolean>(false);
-  const [isLearningMode, setIsLearningMode] = useState<boolean>(false);
+  const [triggerConfetti, setTriggerConfetti] = useState(false);
+  const [isLearningMode, setIsLearningMode] = useState(true);
+  const [isProgramRunning, setIsProgramRunning] = useState(false);
+
+  const cubeRef = useRef<CubeState>(cube);
+  const programTokenRef = useRef(0);
+  const programRunningRef = useRef(false);
+  const wasSolvedRef = useRef(true);
 
   const cubeIsSolved = isSolved(cube);
 
-  // Detect when the cube is transitioned from unsolved to solved
+  const updateCube = useCallback((next: CubeState) => {
+    cubeRef.current = next;
+    setCube(next);
+  }, []);
+
+  const cancelProgram = useCallback(() => {
+    programTokenRef.current += 1;
+    programRunningRef.current = false;
+    setIsProgramRunning(false);
+  }, []);
+
   useEffect(() => {
-    if (cubeIsSolved && !prevSolved) {
+    let timer: number | undefined;
+
+    if (cubeIsSolved && !wasSolvedRef.current) {
       setTriggerConfetti(true);
-      const timer = setTimeout(() => {
-        setTriggerConfetti(false);
-      }, 6200);
-      return () => clearTimeout(timer);
+      timer = window.setTimeout(() => setTriggerConfetti(false), 1800);
+    } else if (!cubeIsSolved) {
+      setTriggerConfetti(false);
     }
-    setPrevSolved(cubeIsSolved);
-  }, [cubeIsSolved, prevSolved]);
 
-  // Handle a single turn movement
-  const handleMove = (moveStr: string) => {
-    // Append actual previous state into history stack before applying next move
-    setCubeStatesHistory((prev) => [...prev, cube]);
-    setCube((prev) => {
-      const next = executeMove(prev, moveStr);
-      return next;
-    });
-  };
+    wasSolvedRef.current = cubeIsSolved;
+    return () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [cubeIsSolved]);
 
-  // Undo standard action
+  const handleMove = useCallback(
+    (move: string) => {
+      if (programRunningRef.current) return;
+
+      const current = cubeRef.current;
+      setCubeStatesHistory((history) => [...history, current]);
+      updateCube(executeMove(current, move));
+    },
+    [updateCube],
+  );
+
+  const handleRunProgram = useCallback(
+    async (moves: string[]) => {
+      if (moves.length === 0 || programRunningRef.current) return;
+
+      const token = programTokenRef.current + 1;
+      programTokenRef.current = token;
+      programRunningRef.current = true;
+      setIsProgramRunning(true);
+
+      const start = cubeRef.current;
+      setCubeStatesHistory((history) => [...history, start]);
+
+      let next = start;
+      for (let index = 0; index < moves.length; index += 1) {
+        if (programTokenRef.current !== token) return;
+
+        next = executeMove(next, moves[index]);
+        updateCube(next);
+
+        if (index < moves.length - 1) {
+          await wait(MOVE_DELAY_MS);
+        }
+      }
+
+      if (programTokenRef.current === token) {
+        programRunningRef.current = false;
+        setIsProgramRunning(false);
+      }
+    },
+    [updateCube],
+  );
+
+  const handleSetCube = useCallback(
+    (moves: string[]) => {
+      cancelProgram();
+      let next = getSolvedState();
+      for (const move of moves) next = executeMove(next, move);
+      updateCube(next);
+      setCubeStatesHistory([]);
+    },
+    [cancelProgram, updateCube],
+  );
+
   const handleUndo = () => {
     if (cubeStatesHistory.length === 0) return;
+    cancelProgram();
+
     const previous = cubeStatesHistory[cubeStatesHistory.length - 1];
-    setCube(previous);
-    setCubeStatesHistory((prev) => prev.slice(0, prev.length - 1));
+    updateCube(previous);
+    setCubeStatesHistory((history) => history.slice(0, -1));
   };
 
-  // Resets the state of the cube to resolved initial state
-  const handleReset = () => {
-    setCube(getSolvedState());
-    setCubeStatesHistory([]);
-  };
+  const handleReset = () => handleSetCube([]);
 
-  // Scrambles the cube
   const handleScramble = () => {
-    const scramble = generateScramble(cube, 10);
-    setCubeStatesHistory((prev) => [...prev, cube]);
-    setCube(scramble.state);
+    cancelProgram();
+    const current = cubeRef.current;
+    const scramble = generateScramble(current, 10);
+    setCubeStatesHistory((history) => [...history, current]);
+    updateCube(scramble.state);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased overflow-hidden select-none">
-      {/* Absolute Minimal Control Row */}
-      <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md px-4 py-2 flex items-center justify-between shadow-sm shrink-0 relative z-50">
-        {/* Learning Mode Toggle */}
+    <div className="flex min-h-screen select-none flex-col overflow-hidden bg-slate-950 font-sans text-slate-100 antialiased">
+      <header className="relative z-50 flex h-14 shrink-0 items-center border-b border-slate-900 bg-slate-950/90 px-3 backdrop-blur-md md:px-5">
+        <div className="flex items-center gap-2">
+          <span className="grid h-6 w-6 grid-cols-2 gap-0.5 rounded-md bg-slate-900 p-1" aria-hidden="true">
+            <span className="rounded-sm bg-red-500" />
+            <span className="rounded-sm bg-amber-400" />
+            <span className="rounded-sm bg-emerald-500" />
+            <span className="rounded-sm bg-blue-500" />
+          </span>
+          <span className="font-mono text-[11px] font-bold tracking-[0.18em] text-slate-300">
+            RUBIK LAB
+          </span>
+        </div>
+
         <button
           type="button"
-          onClick={() => setIsLearningMode(!isLearningMode)}
-          aria-label={
-            isLearningMode ? "Close learning mode" : "Open learning mode"
-          }
-          className={`flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-md font-sans text-[10px] md:text-sm font-bold border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+          onClick={() => setIsLearningMode((open) => !open)}
+          className={`ml-auto flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
             isLearningMode
-              ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
-              : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-white"
+              ? 'border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/15'
+              : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700 hover:text-white'
           }`}
+          aria-label={isLearningMode ? 'Switch to free play' : 'Open lessons'}
         >
-          <BookOpen className="w-3 h-3 md:w-4 md:h-4" />
-          <span className="hidden sm:inline">
-            {isLearningMode ? "Close" : "Learn"}
-          </span>
+          <BookOpen className="h-3.5 w-3.5" />
+          {isLearningMode ? 'Free play' : 'Learn'}
         </button>
 
-        {/* Global actions with newly introduced Undo command */}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            id="global-scramble"
-            onClick={handleScramble}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-mono text-[10px] md:text-sm font-bold rounded-md border border-amber-500/10 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-          >
-            <Shuffle className="w-3 h-3 md:w-4 md:h-4" /> Scramble
-          </button>
+        {!isLearningMode && (
+          <div className="ml-2 flex gap-1.5">
+            <button
+              type="button"
+              onClick={handleScramble}
+              disabled={isProgramRunning}
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-amber-500/15 bg-amber-500/10 px-2.5 text-xs font-bold text-amber-300 transition hover:bg-amber-400 hover:text-slate-950 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 md:px-3"
+              aria-label="Scramble cube"
+            >
+              <Shuffle className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Scramble</span>
+            </button>
 
-          <button
-            type="button"
-            id="global-undo"
-            disabled={cubeStatesHistory.length === 0}
-            title={
-              cubeStatesHistory.length === 0
-                ? "No moves to undo"
-                : "Undo last move"
-            }
-            onClick={handleUndo}
-            className={`px-3 py-1.5 md:px-4 md:py-2 font-mono text-[10px] md:text-sm font-bold rounded-md border transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
-              cubeStatesHistory.length > 0
-                ? "bg-amber-500/10 hover:bg-amber-500 border-amber-500/15 text-amber-300 hover:text-slate-950"
-                : "bg-slate-950 border-slate-900 text-slate-700 cursor-not-allowed"
-            }`}
-          >
-            <Undo2 className="w-3 h-3 md:w-4 md:h-4" /> Undo
-          </button>
+            <button
+              type="button"
+              disabled={cubeStatesHistory.length === 0 || isProgramRunning}
+              onClick={handleUndo}
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2.5 text-xs font-bold text-slate-300 transition hover:border-slate-700 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:text-slate-700 md:px-3"
+              aria-label="Undo last action"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Undo</span>
+            </button>
 
-          <button
-            type="button"
-            id="global-reset"
-            onClick={handleReset}
-            className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-900 hover:bg-slate-855 text-slate-400 hover:text-white font-mono text-[10px] md:text-sm font-bold rounded-md border border-slate-800 transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
-          >
-            <RotateCcw className="w-3 h-3 md:w-4 md:h-4" /> Reset
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={handleReset}
+              disabled={isProgramRunning}
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-2.5 text-xs font-bold text-slate-300 transition hover:border-slate-700 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 md:px-3"
+              aria-label="Reset cube"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Reset</span>
+            </button>
+          </div>
+        )}
       </header>
 
-      {/* Main Sandbox Panel maximizing user viewport space */}
-      <main className="flex-1 relative w-full overflow-hidden">
-        {/* Beautiful win fanfare confetti */}
+      <main className="relative w-full flex-1 overflow-hidden">
         {triggerConfetti && <ConfettiOverlay />}
 
         {isLearningMode && (
-          <LearningModePanel onClose={() => setIsLearningMode(false)} />
+          <LearningModePanel
+            cubeState={cube}
+            isRunning={isProgramRunning}
+            onClose={() => setIsLearningMode(false)}
+            onRunProgram={handleRunProgram}
+            onSetCube={handleSetCube}
+          />
         )}
 
-        {/* Render 3D Model with tactile keyboard-attached gestures */}
-        <Cube3D cubeState={cube} onMove={handleMove} />
+        <div
+          className={isProgramRunning ? 'pointer-events-none' : undefined}
+          aria-busy={isProgramRunning}
+        >
+          <Cube3D cubeState={cube} onMove={handleMove} />
+        </div>
 
-        {/* Dynamic status pill displayed subtly on top of the background */}
-        {cubeIsSolved && (
-          <div className="absolute bottom-4 right-4 z-40 bg-emerald-600/10 backdrop-blur-md border border-emerald-500/30 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-lg animate-pulse">
-            <span className="text-xs">🏆</span>
-            <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest font-mono">
+        {cubeIsSolved && !isLearningMode && (
+          <div className="absolute left-1/2 top-3 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-emerald-500/20 bg-slate-950/80 px-3 py-1.5 backdrop-blur-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="font-mono text-[9px] font-bold tracking-[0.16em] text-emerald-300">
               SOLVED
             </span>
           </div>
