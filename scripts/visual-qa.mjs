@@ -23,19 +23,34 @@ async function inspectLayout(page, label) {
 
   const dialog = page.getByRole('dialog', { name: 'Interactive cube lesson' });
   await dialog.waitFor({ state: 'visible' });
-  const box = await dialog.boundingBox();
-  assert(box, `${label}: lesson dialog has no bounding box`);
-  assert(box.x >= 0, `${label}: lesson dialog starts outside the viewport`);
+  const dialogBox = await dialog.boundingBox();
+  assert(dialogBox, `${label}: lesson dialog has no bounding box`);
+  assert(dialogBox.x >= 0, `${label}: lesson dialog starts outside the viewport`);
   assert(
-    box.x + box.width <= metrics.innerWidth + 1,
+    dialogBox.x + dialogBox.width <= metrics.innerWidth + 1,
     `${label}: lesson dialog exceeds viewport width`,
   );
   assert(
-    box.y + box.height <= metrics.innerHeight + 1,
+    dialogBox.y + dialogBox.height <= metrics.innerHeight + 1,
     `${label}: lesson dialog exceeds viewport height`,
   );
 
-  return { metrics, dialog: box };
+  const cube = page.locator('#cube-3d-model');
+  await cube.waitFor({ state: 'visible' });
+  const cubeBox = await cube.boundingBox();
+  assert(cubeBox, `${label}: cube has no bounding box`);
+  assert(cubeBox.y >= 0, `${label}: cube begins above the viewport`);
+  assert(
+    cubeBox.y + cubeBox.height <= dialogBox.y - 4,
+    `${label}: cube overlaps the lesson card`,
+  );
+
+  assert(
+    !(await page.locator('#btn-spin-up').isVisible()),
+    `${label}: free-play controls are visible during a lesson`,
+  );
+
+  return { metrics, dialog: dialogBox, cube: cubeBox };
 }
 
 function watchRuntime(page, errors) {
@@ -105,10 +120,10 @@ async function runDesktop(browser, report) {
     },
   ];
 
-  for (const lesson of lessons) {
+  for (const [index, lesson] of lessons.entries()) {
     await runCommand(page, lesson.command, lesson.success);
     await page.screenshot({
-      path: `${outputDir}/desktop-${lesson.next === 'Free play' ? 'lesson-4' : lesson.command.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`,
+      path: `${outputDir}/desktop-lesson-${index + 1}.png`,
       fullPage: true,
     });
     await page
@@ -121,6 +136,10 @@ async function runDesktop(browser, report) {
     .getByRole('dialog', { name: 'Interactive cube lesson' })
     .waitFor({ state: 'hidden' });
   await page.getByLabel('Scramble cube').waitFor({ state: 'visible' });
+  assert(
+    await page.locator('#btn-spin-up').isVisible(),
+    'Desktop free play controls did not return after lessons closed',
+  );
   await page.getByLabel('Scramble cube').click();
   await page.getByLabel('Undo last action').click();
   await page.getByLabel('Reset cube').click();
@@ -155,6 +174,10 @@ async function runMobile(browser, report) {
 
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
   const startLayout = await inspectLayout(page, 'mobile start');
+  assert(
+    !(await page.getByLabel('Open menu').isVisible()),
+    'Mobile free-play menu is visible during a lesson',
+  );
   await page.screenshot({
     path: `${outputDir}/mobile-start.png`,
     fullPage: true,
