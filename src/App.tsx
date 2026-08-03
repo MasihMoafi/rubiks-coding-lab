@@ -9,6 +9,7 @@ import {
 import Cube3D from './components/Cube3D';
 import ConfettiOverlay from './components/ConfettiOverlay';
 import LearningModePanel from './components/LearningModePanel';
+import MovePad from './components/MovePad';
 import { BookOpen, RotateCcw, Shuffle, Undo2 } from 'lucide-react';
 
 const MOVE_DELAY_MS = 105;
@@ -45,10 +46,10 @@ export default function App() {
   useEffect(() => {
     let timer: number | undefined;
 
-    if (cubeIsSolved && !wasSolvedRef.current) {
+    if (!isLearningMode && cubeIsSolved && !wasSolvedRef.current) {
       setTriggerConfetti(true);
-      timer = window.setTimeout(() => setTriggerConfetti(false), 1800);
-    } else if (!cubeIsSolved) {
+      timer = window.setTimeout(() => setTriggerConfetti(false), 1400);
+    } else if (!cubeIsSolved || isLearningMode) {
       setTriggerConfetti(false);
     }
 
@@ -56,7 +57,7 @@ export default function App() {
     return () => {
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [cubeIsSolved]);
+  }, [cubeIsSolved, isLearningMode]);
 
   const handleMove = useCallback(
     (move: string) => {
@@ -200,7 +201,7 @@ export default function App() {
       </header>
 
       <main className="relative w-full flex-1 overflow-hidden">
-        {triggerConfetti && <ConfettiOverlay />}
+        {triggerConfetti && !isLearningMode && <ConfettiOverlay />}
 
         {isLearningMode && (
           <LearningModePanel
@@ -212,7 +213,7 @@ export default function App() {
         )}
 
         <div
-          className={`${isLearningMode ? 'learning-stage' : ''} ${
+          className={`${isLearningMode ? 'learning-stage' : 'free-play-stage'} ${
             isProgramRunning ? 'pointer-events-none' : ''
           }`}
           aria-busy={isProgramRunning}
@@ -222,6 +223,10 @@ export default function App() {
             onMove={isLearningMode ? undefined : handleMove}
           />
         </div>
+
+        {!isLearningMode && (
+          <MovePad disabled={isProgramRunning} onMove={handleMove} />
+        )}
 
         {cubeIsSolved && !isLearningMode && (
           <div className="absolute left-1/2 top-3 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-emerald-500/20 bg-slate-950/80 px-3 py-1.5 backdrop-blur-md">
