@@ -47,7 +47,7 @@ async function inspectLayout(page, label) {
 
   assert(
     !(await page.locator('#btn-spin-up').isVisible()),
-    `${label}: free-play controls are visible during a lesson`,
+    `${label}: legacy controls are visible during a lesson`,
   );
 
   return { metrics, dialog: dialogBox, cube: cubeBox };
@@ -135,11 +135,15 @@ async function runDesktop(browser, report) {
   await page
     .getByRole('dialog', { name: 'Interactive cube lesson' })
     .waitFor({ state: 'hidden' });
-  await page.getByLabel('Scramble cube').waitFor({ state: 'visible' });
+  await page.getByRole('region', { name: 'Cube moves' }).waitFor();
   assert(
-    await page.locator('#btn-spin-up').isVisible(),
-    'Desktop free play controls did not return after lessons closed',
+    !(await page.locator('#btn-spin-up').isVisible()),
+    'Legacy free-play controls returned after lessons closed',
   );
+
+  // Direct controls must visibly alter state and remain undoable.
+  await page.getByRole('button', { name: 'R clockwise' }).click();
+  await page.getByLabel('Undo last action').click();
   await page.getByLabel('Scramble cube').click();
   await page.getByLabel('Undo last action').click();
   await page.getByLabel('Reset cube').click();
@@ -154,6 +158,7 @@ async function runDesktop(browser, report) {
     startLayout,
     lessonsCompleted: lessons.length,
     wrongAnswerRecovery: true,
+    directMoveControls: true,
     freePlayControls: true,
   };
 
@@ -176,7 +181,7 @@ async function runMobile(browser, report) {
   const startLayout = await inspectLayout(page, 'mobile start');
   assert(
     !(await page.getByLabel('Open menu').isVisible()),
-    'Mobile free-play menu is visible during a lesson',
+    'Mobile legacy menu is visible during a lesson',
   );
   await page.screenshot({
     path: `${outputDir}/mobile-start.png`,
