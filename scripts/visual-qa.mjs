@@ -110,7 +110,7 @@ async function runDesktop(browser, report) {
     },
     {
       command: "R U R' U'",
-      success: 'Four instructions produced one repeatable result.',
+      success: 'The right-hand algorithm restored the cube.',
       next: 'Next',
     },
     {
