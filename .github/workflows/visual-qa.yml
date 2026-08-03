@@ -39,7 +39,8 @@ jobs:
 
       - name: Start production preview
         run: |
-          pnpm preview -- --host 127.0.0.1 --port 4173 > /tmp/rubik-preview.log 2>&1 &
+          nohup pnpm exec vite preview --host 127.0.0.1 --port 4173 > /tmp/rubik-preview.log 2>&1 &
+          echo $! > /tmp/rubik-preview.pid
           node - <<'NODE'
           const url = 'http://127.0.0.1:4173';
           const deadline = Date.now() + 30_000;
