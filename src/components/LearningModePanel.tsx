@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ArrowRight, Check, Play, RotateCcw, X } from 'lucide-react';
-import { executeMovesString } from '../cubeEngine';
+import { executeMovesString, getSolvedState } from '../cubeEngine';
 import { INTERACTIVE_LESSONS, parseProgram } from '../learning';
 import type { CubeState } from '../types';
 
@@ -16,7 +16,6 @@ interface LearningModePanelProps {
 type FeedbackTone = 'quiet' | 'error' | 'success';
 
 export default function LearningModePanel({
-  cubeState,
   isRunning,
   onClose,
   onRunProgram,
@@ -70,11 +69,18 @@ export default function LearningModePanel({
       return;
     }
 
+    // Every attempt starts from the lesson's defined state. A wrong answer must
+    // not quietly change the starting conditions for the next attempt.
+    const lessonStartCube = executeMovesString(
+      getSolvedState(),
+      lesson.initialMoves.join(' '),
+    );
     const resultCube = executeMovesString(
-      cubeState,
+      lessonStartCube,
       parsed.program.moves.join(' '),
     );
 
+    onSetCube(lesson.initialMoves);
     setPassed(false);
     setFeedback({
       tone: 'quiet',
@@ -144,7 +150,8 @@ export default function LearningModePanel({
           <button
             type="button"
             onClick={onClose}
-            className="ml-2 rounded-md p-1 text-slate-500 transition hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            disabled={isRunning}
+            className="ml-2 rounded-md p-1 text-slate-500 transition hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:cursor-not-allowed disabled:opacity-30"
             aria-label="Close lessons"
           >
             <X className="h-4 w-4" />
