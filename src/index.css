@@ -1,1 +1,55 @@
 @import "tailwindcss";
+
+.learning-stage,
+.free-play-stage {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(99, 102, 241, 0.09), transparent 32%),
+    #020617;
+}
+
+/* Direct notation controls replace the old row/axis/arrow palette. */
+.learning-stage > div > div:has(> button[aria-label="Open menu"]),
+.learning-stage > div > div:has(> button[aria-label="Close menu"]),
+.learning-stage > div > div:has(#btn-spin-up),
+.free-play-stage > div > div:has(> button[aria-label="Open menu"]),
+.free-play-stage > div > div:has(> button[aria-label="Close menu"]),
+.free-play-stage > div > div:has(#btn-spin-up) {
+  display: none;
+}
+
+/* Keep attention on the state transition rather than decorative particles. */
+.learning-stage div:has(> #cube-3d-model) > div:first-child,
+.free-play-stage div:has(> #cube-3d-model) > div:first-child {
+  display: none;
+}
+
+.learning-stage #cube-3d-model {
+  scale: 1.18;
+  translate: 0 -9vh;
+}
+
+.free-play-stage #cube-3d-model {
+  scale: 1.16;
+  translate: 0 -5vh;
+}
+
+.learning-stage .cube-sticker {
+  cursor: default;
+}
+
+.learning-stage .cube-sticker > .animate-pulse,
+.free-play-stage .cube-sticker > .animate-pulse {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .learning-stage #cube-3d-model {
+    scale: 1.35;
+    translate: 0 -7vh;
+  }
+
+  .free-play-stage #cube-3d-model {
+    scale: 1.28;
+    translate: 0 -4vh;
+  }
+}

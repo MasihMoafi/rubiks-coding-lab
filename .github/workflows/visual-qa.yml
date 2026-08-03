@@ -1,0 +1,72 @@
+name: visual-qa
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        run: npm install --global pnpm@10
+
+      - name: Install app dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build production app
+        run: pnpm build
+
+      - name: Install browser runner
+        run: |
+          pnpm add --ignore-workspace-root-check --save-dev playwright@1.54.1
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Start production preview
+        run: |
+          nohup pnpm exec vite preview --host 127.0.0.1 --port 4173 > /tmp/rubik-preview.log 2>&1 &
+          echo $! > /tmp/rubik-preview.pid
+          node - <<'NODE'
+          const url = 'http://127.0.0.1:4173';
+          const deadline = Date.now() + 30_000;
+          while (Date.now() < deadline) {
+            try {
+              const response = await fetch(url);
+              if (response.ok) process.exit(0);
+            } catch {}
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+          console.error('Preview server did not become ready.');
+          process.exit(1);
+          NODE
+
+      - name: Exercise desktop and mobile lessons
+        env:
+          BASE_URL: http://127.0.0.1:4173
+        run: node scripts/visual-qa.mjs
+
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rubik-lab-visual-qa
+          path: |
+            qa-artifacts
+            /tmp/rubik-preview.log
+          if-no-files-found: warn
+          retention-days: 7

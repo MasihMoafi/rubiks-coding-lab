@@ -1,0 +1,39 @@
+name: verify
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        run: npm install --global pnpm@10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test cube and learning engines
+        run: pnpm test
+
+      - name: Type-check
+        run: pnpm lint
+
+      - name: Build production app
+        run: pnpm build
