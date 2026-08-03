@@ -22,25 +22,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
-      - name: Reconcile dependency lock
-        run: npm install --package-lock-only --ignore-scripts
+      - name: Install pnpm
+        run: npm install --global pnpm@10
 
       - name: Install app dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build production app
-        run: npm run build
+        run: pnpm build
 
       - name: Install browser runner
         run: |
-          npm install --no-save --package-lock=false playwright@1.54.1
-          npx playwright install --with-deps chromium
+          pnpm add --ignore-workspace-root-check --save-dev playwright@1.54.1
+          pnpm exec playwright install --with-deps chromium
 
       - name: Start production preview
         run: |
-          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/rubik-preview.log 2>&1 &
+          pnpm preview -- --host 127.0.0.1 --port 4173 > /tmp/rubik-preview.log 2>&1 &
           node - <<'NODE'
           const url = 'http://127.0.0.1:4173';
           const deadline = Date.now() + 30_000;
@@ -60,14 +59,13 @@ jobs:
           BASE_URL: http://127.0.0.1:4173
         run: node scripts/visual-qa.mjs
 
-      - name: Upload visual evidence and repaired lock
+      - name: Upload visual evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: rubik-lab-visual-qa
           path: |
             qa-artifacts
-            package-lock.json
             /tmp/rubik-preview.log
           if-no-files-found: warn
           retention-days: 7
