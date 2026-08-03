@@ -13,6 +13,7 @@ import MovePad from './components/MovePad';
 import { BookOpen, RotateCcw, Shuffle, Undo2 } from 'lucide-react';
 
 const MOVE_DELAY_MS = 105;
+const CELEBRATION_MOVE_THRESHOLD = 4;
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -29,6 +30,7 @@ export default function App() {
   const programTokenRef = useRef(0);
   const programRunningRef = useRef(false);
   const wasSolvedRef = useRef(true);
+  const turnsSinceSolvedRef = useRef(0);
 
   const cubeIsSolved = isSolved(cube);
 
@@ -45,15 +47,22 @@ export default function App() {
 
   useEffect(() => {
     let timer: number | undefined;
+    const completedMeaningfulSolve =
+      !isLearningMode &&
+      cubeIsSolved &&
+      !wasSolvedRef.current &&
+      turnsSinceSolvedRef.current >= CELEBRATION_MOVE_THRESHOLD;
 
-    if (!isLearningMode && cubeIsSolved && !wasSolvedRef.current) {
+    if (completedMeaningfulSolve) {
       setTriggerConfetti(true);
       timer = window.setTimeout(() => setTriggerConfetti(false), 1400);
     } else if (!cubeIsSolved || isLearningMode) {
       setTriggerConfetti(false);
     }
 
+    if (cubeIsSolved) turnsSinceSolvedRef.current = 0;
     wasSolvedRef.current = cubeIsSolved;
+
     return () => {
       if (timer !== undefined) window.clearTimeout(timer);
     };
@@ -64,6 +73,7 @@ export default function App() {
       if (programRunningRef.current) return;
 
       const current = cubeRef.current;
+      turnsSinceSolvedRef.current += 1;
       setCubeStatesHistory((history) => [...history, current]);
       updateCube(executeMove(current, move));
     },
@@ -105,6 +115,7 @@ export default function App() {
   const handleSetCube = useCallback(
     (moves: string[]) => {
       cancelProgram();
+      turnsSinceSolvedRef.current = 0;
       let next = getSolvedState();
       for (const move of moves) next = executeMove(next, move);
       updateCube(next);
@@ -126,6 +137,7 @@ export default function App() {
 
   const handleScramble = () => {
     cancelProgram();
+    turnsSinceSolvedRef.current = 0;
     const current = cubeRef.current;
     const scramble = generateScramble(current, 10);
     setCubeStatesHistory((history) => [...history, current]);
