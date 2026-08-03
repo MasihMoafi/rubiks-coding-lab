@@ -149,7 +149,8 @@ export default function App() {
         <button
           type="button"
           onClick={() => setIsLearningMode((open) => !open)}
-          className={`ml-auto flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+          disabled={isProgramRunning}
+          className={`ml-auto flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:cursor-not-allowed disabled:opacity-40 ${
             isLearningMode
               ? 'border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/15'
               : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700 hover:text-white'
@@ -203,7 +204,6 @@ export default function App() {
 
         {isLearningMode && (
           <LearningModePanel
-            cubeState={cube}
             isRunning={isProgramRunning}
             onClose={() => setIsLearningMode(false)}
             onRunProgram={handleRunProgram}
@@ -212,10 +212,15 @@ export default function App() {
         )}
 
         <div
-          className={isProgramRunning ? 'pointer-events-none' : undefined}
+          className={`${isLearningMode ? 'learning-stage' : ''} ${
+            isProgramRunning ? 'pointer-events-none' : ''
+          }`}
           aria-busy={isProgramRunning}
         >
-          <Cube3D cubeState={cube} onMove={handleMove} />
+          <Cube3D
+            cubeState={cube}
+            onMove={isLearningMode ? undefined : handleMove}
+          />
         </div>
 
         {cubeIsSolved && !isLearningMode && (
