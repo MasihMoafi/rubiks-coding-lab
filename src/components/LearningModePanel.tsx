@@ -61,7 +61,7 @@ export default function LearningModePanel({
     if (isRunning) return;
 
     const parsed = parseProgram(source);
-    if (!parsed.ok) {
+    if ('error' in parsed) {
       setPassed(false);
       setFeedback({ tone: 'error', text: parsed.error });
       return;
