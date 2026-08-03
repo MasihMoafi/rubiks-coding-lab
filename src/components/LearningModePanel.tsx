@@ -3,10 +3,8 @@ import type { FormEvent } from 'react';
 import { ArrowRight, Check, Play, RotateCcw, X } from 'lucide-react';
 import { executeMovesString, getSolvedState } from '../cubeEngine';
 import { INTERACTIVE_LESSONS, parseProgram } from '../learning';
-import type { CubeState } from '../types';
 
 interface LearningModePanelProps {
-  cubeState: CubeState;
   isRunning: boolean;
   onClose: () => void;
   onRunProgram: (moves: string[]) => Promise<void>;
