@@ -1,76 +1,239 @@
-import React from 'react';
-import { BookOpen, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
+import { ArrowRight, Check, Play, RotateCcw, X } from 'lucide-react';
+import { executeMovesString } from '../cubeEngine';
+import { INTERACTIVE_LESSONS, parseProgram } from '../learning';
+import type { CubeState } from '../types';
 
 interface LearningModePanelProps {
+  cubeState: CubeState;
+  isRunning: boolean;
   onClose: () => void;
+  onRunProgram: (moves: string[]) => Promise<void>;
+  onSetCube: (moves: string[]) => void;
 }
 
-export default function LearningModePanel({ onClose }: LearningModePanelProps) {
+type FeedbackTone = 'quiet' | 'error' | 'success';
+
+export default function LearningModePanel({
+  cubeState,
+  isRunning,
+  onClose,
+  onRunProgram,
+  onSetCube,
+}: LearningModePanelProps) {
+  const [lessonIndex, setLessonIndex] = useState(0);
+  const [source, setSource] = useState('');
+  const [passed, setPassed] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    tone: FeedbackTone;
+    text: string;
+  }>({ tone: 'quiet', text: INTERACTIVE_LESSONS[0].hint });
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const lesson = INTERACTIVE_LESSONS[lessonIndex];
+  const isLastLesson = lessonIndex === INTERACTIVE_LESSONS.length - 1;
+
+  useEffect(() => {
+    setSource('');
+    setPassed(false);
+    setFeedback({ tone: 'quiet', text: lesson.hint });
+    onSetCube(lesson.initialMoves);
+
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 80);
+    return () => window.clearTimeout(focusTimer);
+  }, [lesson, onSetCube]);
+
+  const resetLesson = () => {
+    onSetCube(lesson.initialMoves);
+    setSource('');
+    setPassed(false);
+    setFeedback({ tone: 'quiet', text: lesson.hint });
+    inputRef.current?.focus();
+  };
+
+  const useExample = () => {
+    setSource(lesson.example);
+    setPassed(false);
+    setFeedback({ tone: 'quiet', text: 'Press Run and watch the state change.' });
+    window.setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const runProgram = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isRunning) return;
+
+    const parsed = parseProgram(source);
+    if (!parsed.ok) {
+      setPassed(false);
+      setFeedback({ tone: 'error', text: parsed.error });
+      return;
+    }
+
+    const resultCube = executeMovesString(
+      cubeState,
+      parsed.program.moves.join(' '),
+    );
+
+    setPassed(false);
+    setFeedback({
+      tone: 'quiet',
+      text: `Running ${parsed.program.moves.length} move${
+        parsed.program.moves.length === 1 ? '' : 's'
+      }…`,
+    });
+
+    await onRunProgram(parsed.program.moves);
+
+    if (lesson.validate(parsed.program, resultCube)) {
+      setPassed(true);
+      setFeedback({ tone: 'success', text: lesson.success });
+      return;
+    }
+
+    setFeedback({
+      tone: 'error',
+      text: `Not yet. Try ${lesson.example}.`,
+    });
+  };
+
+  const advance = () => {
+    if (isLastLesson) {
+      onClose();
+      return;
+    }
+    setLessonIndex((current) => current + 1);
+  };
+
+  const feedbackClass =
+    feedback.tone === 'success'
+      ? 'text-emerald-300'
+      : feedback.tone === 'error'
+        ? 'text-rose-300'
+        : 'text-slate-400';
+
   return (
-    <div className="absolute top-0 right-0 w-80 md:w-96 bottom-0 bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col pt-2 pb-4 overflow-hidden transform transition-all">
-      <div className="flex items-center justify-between px-4 pb-3 border-b border-slate-800 shrink-0 mt-2">
-        <div className="flex items-center gap-2 text-indigo-400">
-          <BookOpen className="w-5 h-5" />
-          <h2 className="font-sans font-bold text-sm tracking-wide uppercase">Learning Mode</h2>
+    <div className="pointer-events-none absolute inset-x-3 bottom-3 z-50 flex justify-center md:inset-x-6 md:bottom-6">
+      <section
+        role="dialog"
+        aria-label="Interactive cube lesson"
+        className="pointer-events-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-950/95 shadow-2xl shadow-black/40 backdrop-blur-xl"
+      >
+        <div className="flex h-10 items-center gap-3 border-b border-slate-800 px-4">
+          <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-indigo-300">
+            {String(lessonIndex + 1).padStart(2, '0')} /{' '}
+            {String(INTERACTIVE_LESSONS.length).padStart(2, '0')}
+          </span>
+          <span className="font-mono text-[10px] font-bold tracking-[0.18em] text-slate-500">
+            {lesson.concept}
+          </span>
+          <div className="ml-auto flex items-center gap-1.5" aria-hidden="true">
+            {INTERACTIVE_LESSONS.map((item, index) => (
+              <span
+                key={item.id}
+                className={`h-1.5 rounded-full transition-all ${
+                  index === lessonIndex
+                    ? 'w-5 bg-indigo-400'
+                    : index < lessonIndex
+                      ? 'w-1.5 bg-emerald-500'
+                      : 'w-1.5 bg-slate-700'
+                }`}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-2 rounded-md p-1 text-slate-500 transition hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            aria-label="Close lessons"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <button 
-          onClick={onClose}
-          aria-label="Close learning mode"
-          className="p-1 hover:bg-slate-800 rounded-md transition-colors text-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 text-sm text-slate-300">
-        
-        <section className="space-y-2">
-          <h3 className="text-white font-bold tracking-wide">The Basics</h3>
-          <p className="text-slate-400 leading-relaxed text-xs">
-            A Rubik's cube has 6 faces. The center pieces NEVER move relative to each other. The White center is always opposite the Yellow center, Blue is opposite Green, and Red is opposite Orange.
-          </p>
-          <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 mt-2 text-xs text-slate-400">
-            <span className="block text-indigo-400 mb-1 font-bold">Orientation Strategy:</span>
-            Keep the White face pointing Up (Top) and the Green face pointing toward you (Front) to maintain a standard perspective while solving.
+        <div className="p-4 md:p-5">
+          <div className="flex items-start gap-4">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold text-white md:text-lg">
+                {lesson.title}
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-slate-400 md:text-sm">
+                {lesson.prompt}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={useExample}
+              disabled={isRunning}
+              className="max-w-[46%] shrink-0 truncate rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-xs text-indigo-200 transition hover:border-indigo-400/60 hover:bg-indigo-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+              title={`Use ${lesson.example}`}
+            >
+              {lesson.example}
+            </button>
           </div>
-        </section>
 
-        <section className="space-y-2">
-          <h3 className="text-white font-bold tracking-wide">Notation</h3>
-          <p className="text-slate-400 leading-relaxed text-xs">
-            Moves are represented by letters corresponding to the faces:
-          </p>
-          <ul className="grid grid-cols-2 gap-2 text-xs mt-2">
-            <li className="flex items-center gap-1.5"><span className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 text-white font-mono font-bold">U</span> Up</li>
-            <li className="flex items-center gap-1.5"><span className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 text-white font-mono font-bold">D</span> Down</li>
-            <li className="flex items-center gap-1.5"><span className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 text-white font-mono font-bold">L</span> Left</li>
-            <li className="flex items-center gap-1.5"><span className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 text-white font-mono font-bold">R</span> Right</li>
-            <li className="flex items-center gap-1.5"><span className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 text-white font-mono font-bold">F</span> Front</li>
-            <li className="flex items-center gap-1.5"><span className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 text-white font-mono font-bold">B</span> Back</li>
-          </ul>
-          <p className="text-slate-500 leading-relaxed text-[10px] italic mt-2">
-            A plain letter (e.g., R) means a clockwise rotation. An apostrophe (e.g., R') means counter-clockwise.
-          </p>
-        </section>
+          <form onSubmit={runProgram} className="mt-4">
+            <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-black/35 p-1.5 focus-within:border-indigo-400/70 focus-within:ring-2 focus-within:ring-indigo-500/10">
+              <span className="pl-2 font-mono text-sm text-indigo-400" aria-hidden="true">
+                ›
+              </span>
+              <input
+                ref={inputRef}
+                value={source}
+                onChange={(event) => {
+                  setSource(event.target.value);
+                  setPassed(false);
+                }}
+                onKeyDown={(event) => event.stopPropagation()}
+                disabled={isRunning}
+                spellCheck={false}
+                autoCapitalize="characters"
+                autoComplete="off"
+                aria-label="Cube program"
+                placeholder="Type a cube command"
+                className="min-w-0 flex-1 bg-transparent px-1 py-2 font-mono text-sm text-white outline-none placeholder:text-slate-600 disabled:opacity-60"
+              />
+              <button
+                type="submit"
+                disabled={isRunning || source.trim().length === 0}
+                className="flex h-9 items-center gap-1.5 rounded-lg bg-indigo-400 px-3 text-xs font-bold text-slate-950 transition hover:bg-indigo-300 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-600"
+              >
+                <Play className="h-3.5 w-3.5 fill-current" />
+                {isRunning ? 'Running' : 'Run'}
+              </button>
+            </div>
+          </form>
 
-        <section className="space-y-2">
-          <h3 className="text-white font-bold tracking-wide">The First Step: The Cross</h3>
-          <p className="text-slate-400 leading-relaxed text-xs">
-            Start by finding the White center piece. Your goal is to form a white cross, ensuring that the other colors on the edge pieces match their respective center colors.
-          </p>
-        </section>
+          <div className="mt-3 flex min-h-8 items-center gap-3">
+            <p className={`flex-1 text-xs ${feedbackClass}`} aria-live="polite">
+              {passed && <Check className="mr-1.5 inline h-3.5 w-3.5" />}
+              {feedback.text}
+            </p>
 
-        <section className="space-y-2">
-          <h3 className="text-white font-bold tracking-wide">Core Algorithm</h3>
-          <p className="text-slate-400 leading-relaxed text-xs">
-            The Right-Hand Algorithm is a fundamental 4-move sequence used in many steps:
-          </p>
-          <div className="font-mono text-center bg-slate-950 border border-slate-800 rounded py-2 text-emerald-400 tracking-widest text-sm font-bold">
-            R U R' U'
+            {passed ? (
+              <button
+                type="button"
+                onClick={advance}
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-400 px-3 py-2 text-xs font-bold text-slate-950 transition hover:bg-emerald-300 active:scale-95"
+              >
+                {isLastLesson ? 'Free play' : 'Next'}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={resetLesson}
+                disabled={isRunning}
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Reset this lesson"
+                title="Reset this lesson"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            )}
           </div>
-        </section>
-        
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
