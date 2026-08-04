@@ -20,6 +20,23 @@ describe('parseProgram', () => {
     expect(result.program.normalized).toBe("R U R' U'");
   });
 
+  it('accepts and expands standard double turns', () => {
+    const result = parseProgram('R2 M2');
+
+    expect(result.ok).toBe(true);
+    if ('error' in result) return;
+    expect(result.program.normalized).toBe('R2 M2');
+    expect(result.program.moves).toEqual(['R', 'R', 'M', 'M']);
+  });
+
+  it('expands double turns inside repeat blocks', () => {
+    const result = parseProgram('repeat(2) { R2 U }');
+
+    expect(result.ok).toBe(true);
+    if ('error' in result) return;
+    expect(result.program.moves).toEqual(['R', 'R', 'U', 'R', 'R', 'U']);
+  });
+
   it('expands a repeat block', () => {
     const result = parseProgram("repeat(6) { R U R' U' }");
 
