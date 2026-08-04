@@ -256,40 +256,48 @@ export function executeMoveClockwise(state: CubeState, face: FaceName): CubeStat
   return next;
 }
 
-// Executes any move (clockwise or inverted)
-// Executes any move (clockwise or inverted)
+type MoveFace = FaceName | 'M' | 'E' | 'S';
+
+function executeQuarterTurn(
+  state: CubeState,
+  face: MoveFace,
+  inverted: boolean,
+): CubeState {
+  const turn = face === 'M' || face === 'E' || face === 'S'
+    ? executeSliceClockwise
+    : executeMoveClockwise;
+
+  const turns = inverted ? 3 : 1;
+  let next = state;
+  for (let index = 0; index < turns; index += 1) {
+    next = turn(next, face as never);
+  }
+  return next;
+}
+
+// Executes a face or slice move, including standard double-turn notation (R2, M2).
 export function executeMove(state: CubeState, move: CubeMove | string): CubeState {
-  let face: FaceName | 'M' | 'E' | 'S';
+  let face: MoveFace;
   let inverted = false;
-  
+  let turns = 1;
+
   if (typeof move === 'string') {
-    const clean = move.trim();
-    face = clean[0] as FaceName | 'M' | 'E' | 'S';
+    const clean = move.trim().toUpperCase();
+    if (!/^[UDFBLRMES](?:2|')?$/.test(clean)) return state;
+
+    face = clean[0] as MoveFace;
     inverted = clean.endsWith("'");
+    turns = clean.endsWith('2') ? 2 : 1;
   } else {
-    face = move.face as FaceName | 'M' | 'E' | 'S';
+    face = move.face as MoveFace;
     inverted = move.inverted;
   }
-  if (face === 'M' || face === 'E' || face === 'S') {
-    if (inverted) {
-      let s = executeSliceClockwise(state, face);
-      s = executeSliceClockwise(s, face);
-      return executeSliceClockwise(s, face);
-    }
-    return executeSliceClockwise(state, face);
-  }
 
-  if (!['U', 'D', 'F', 'B', 'L', 'R'].includes(face)) {
-    return state;
+  let next = state;
+  for (let index = 0; index < turns; index += 1) {
+    next = executeQuarterTurn(next, face, inverted);
   }
-
-  if (inverted) {
-    let s = executeMoveClockwise(state, face as FaceName);
-    s = executeMoveClockwise(s, face as FaceName);
-    return executeMoveClockwise(s, face as FaceName);
-  }
-  
-  return executeMoveClockwise(state, face as FaceName);
+  return next;
 }
 
 // Cache for parsing move strings to avoid redundant string splitting
@@ -376,14 +384,13 @@ export function isSolved(state: CubeState): boolean {
 // Creates a neat, beautiful checkerboard state
 export function getCheckerboardState(): CubeState {
   const solved = getSolvedState();
-  return executeMovesString(solved, "M2 E2 S2"); // Will do U2 D2 R2 L2 F2 B2 manually
+  return executeMovesString(solved, "M2 E2 S2");
 }
 
 export function getPerfectCheckerboard(): CubeState {
-  const solved = getSolvedState();
-  const patternMoves = "M2 E2 S2";
-  return executeMovesString(solved, patternMoves);
+  return getCheckerboardState();
 }
+
 // Help map for standard move names
 export const MOVES_INFO: Record<string, string> = {
   'U': 'Up Face (White) Clockwise',
