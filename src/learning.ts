@@ -27,13 +27,19 @@ export interface InteractiveLesson {
   validate: (program: ParsedProgram, result: CubeState) => boolean;
 }
 
-const VALID_MOVE = /^[UDFBLRMES]'?$/;
+const VALID_MOVE = /^[UDFBLRMES](?:2|')?$/;
 const MAX_REPEAT = 12;
 const MAX_EXPANDED_MOVES = 120;
 const FACE_ORDER = ['U', 'D', 'F', 'B', 'L', 'R'] as const;
 
 function normalizeApostrophes(source: string): string {
   return source.replace(/[’′`]/g, "'");
+}
+
+function expandDoubleTurns(tokens: string[]): string[] {
+  return tokens.flatMap((token) =>
+    token.endsWith('2') ? [token[0], token[0]] : [token],
+  );
 }
 
 function parseMoveList(source: string): ParseProgramResult {
@@ -52,13 +58,14 @@ function parseMoveList(source: string): ParseProgramResult {
     return { ok: false, error: `${invalid} is not a cube move.` };
   }
 
+  const moves = expandDoubleTurns(tokens);
   return {
     ok: true,
     program: {
       kind: 'sequence',
-      bodyMoves: tokens,
+      bodyMoves: moves,
       repetitions: 1,
-      moves: tokens,
+      moves,
       normalized: tokens.join(' '),
     },
   };
@@ -99,7 +106,11 @@ export function parseProgram(source: string): ParseProgramResult {
       bodyMoves,
       repetitions,
       moves,
-      normalized: `repeat(${repetitions}) { ${bodyMoves.join(' ')} }`,
+      normalized: `repeat(${repetitions}) { ${normalizeApostrophes(
+        repeatMatch[3],
+      )
+        .trim()
+        .toUpperCase()} }`,
     },
   };
 }
