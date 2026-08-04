@@ -72,6 +72,29 @@ describe('cubeEngine', () => {
     });
   });
 
+  describe('move notation', () => {
+    it.each(['U', 'D', 'F', 'B', 'L', 'R', 'M', 'E', 'S'])(
+      '%s2 equals two quarter turns',
+      (move) => {
+        const solved = getSolvedState();
+        expect(executeMove(solved, `${move}2`)).toEqual(
+          executeMove(executeMove(solved, move), move),
+        );
+      },
+    );
+
+    it('does not treat R2 as R', () => {
+      const solved = getSolvedState();
+      expect(executeMove(solved, 'R2')).not.toEqual(executeMove(solved, 'R'));
+    });
+
+    it('ignores malformed moves', () => {
+      const solved = getSolvedState();
+      expect(executeMove(solved, 'R22')).toBe(solved);
+      expect(executeMove(solved, '')).toBe(solved);
+    });
+  });
+
   describe('isSolved', () => {
     it('should return true for a freshly generated solved state', () => {
       const solvedState = getSolvedState();
