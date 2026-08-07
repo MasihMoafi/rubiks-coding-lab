@@ -72,6 +72,22 @@ describe('cubeEngine', () => {
     });
   });
 
+  describe('move notation', () => {
+    it('executes R2 as two R turns', () => {
+      const solved = getSolvedState();
+      expect(executeMove(solved, 'R2')).toEqual(
+        executeMove(executeMove(solved, 'R'), 'R')
+      );
+    });
+
+    it('executes M2 as two M turns', () => {
+      const solved = getSolvedState();
+      expect(executeMove(solved, 'M2')).toEqual(
+        executeMove(executeMove(solved, 'M'), 'M')
+      );
+    });
+  });
+
   describe('isSolved', () => {
     it('should return true for a freshly generated solved state', () => {
       const solvedState = getSolvedState();

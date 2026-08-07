@@ -256,40 +256,29 @@ export function executeMoveClockwise(state: CubeState, face: FaceName): CubeStat
   return next;
 }
 
-// Executes any move (clockwise or inverted)
-// Executes any move (clockwise or inverted)
+// Executes face and slice moves, including prime and double-turn notation.
 export function executeMove(state: CubeState, move: CubeMove | string): CubeState {
   let face: FaceName | 'M' | 'E' | 'S';
-  let inverted = false;
-  
+  let turns = 1;
+
   if (typeof move === 'string') {
-    const clean = move.trim();
-    face = clean[0] as FaceName | 'M' | 'E' | 'S';
-    inverted = clean.endsWith("'");
+    const match = move.trim().match(/^([UDFBLRMES])(2|')?$/);
+    if (!match) return state;
+
+    face = match[1] as FaceName | 'M' | 'E' | 'S';
+    turns = match[2] === '2' ? 2 : match[2] === "'" ? 3 : 1;
   } else {
     face = move.face as FaceName | 'M' | 'E' | 'S';
-    inverted = move.inverted;
-  }
-  if (face === 'M' || face === 'E' || face === 'S') {
-    if (inverted) {
-      let s = executeSliceClockwise(state, face);
-      s = executeSliceClockwise(s, face);
-      return executeSliceClockwise(s, face);
-    }
-    return executeSliceClockwise(state, face);
+    turns = move.inverted ? 3 : 1;
   }
 
-  if (!['U', 'D', 'F', 'B', 'L', 'R'].includes(face)) {
-    return state;
+  let result = state;
+  for (let i = 0; i < turns; i++) {
+    result = face === 'M' || face === 'E' || face === 'S'
+      ? executeSliceClockwise(result, face)
+      : executeMoveClockwise(result, face);
   }
-
-  if (inverted) {
-    let s = executeMoveClockwise(state, face as FaceName);
-    s = executeMoveClockwise(s, face as FaceName);
-    return executeMoveClockwise(s, face as FaceName);
-  }
-  
-  return executeMoveClockwise(state, face as FaceName);
+  return result;
 }
 
 // Cache for parsing move strings to avoid redundant string splitting
