@@ -72,7 +72,7 @@ describe('parseProgram', () => {
 });
 
 describe('interactive curriculum', () => {
-  it('covers seven progressively richer concepts', () => {
+  it('moves from exact commands into state-goal search', () => {
     expect(INTERACTIVE_LESSONS.map((lesson) => lesson.concept)).toEqual([
       'COMMAND',
       'INVERSE',
@@ -80,6 +80,8 @@ describe('interactive curriculum', () => {
       'ORDER',
       'EQUIVALENCE',
       'ALGORITHM',
+      'TARGET',
+      'SEARCH',
       'LOOP',
     ]);
   });
@@ -114,6 +116,35 @@ describe('interactive curriculum', () => {
     if ('error' in parsed) return;
 
     const result = executeMovesString(getSolvedState(), parsed.program.moves.join(' '));
+    expect(lesson.validate(parsed.program, result)).toBe(true);
+  });
+
+  it('accepts a non-example program when it reaches the target state', () => {
+    const lesson = INTERACTIVE_LESSONS.find((item) => item.id === 'target');
+    expect(lesson).toBeDefined();
+    if (!lesson) return;
+
+    const parsed = parseProgram("R2 R' U");
+    expect(parsed.ok).toBe(true);
+    if ('error' in parsed) return;
+
+    const result = executeMovesString(getSolvedState(), parsed.program.moves.join(' '));
+    expect(parsed.program.normalized).not.toBe(lesson.example);
+    expect(lesson.validate(parsed.program, result)).toBe(true);
+  });
+
+  it('accepts a longer valid solution in the search lesson', () => {
+    const lesson = INTERACTIVE_LESSONS.find((item) => item.id === 'search');
+    expect(lesson).toBeDefined();
+    if (!lesson) return;
+
+    const parsed = parseProgram("U' R' U U U U");
+    expect(parsed.ok).toBe(true);
+    if ('error' in parsed) return;
+
+    const start = executeMovesString(getSolvedState(), lesson.initialMoves.join(' '));
+    const result = executeMovesString(start, parsed.program.moves.join(' '));
+    expect(parsed.program.normalized).not.toBe(lesson.example);
     expect(lesson.validate(parsed.program, result)).toBe(true);
   });
 });
