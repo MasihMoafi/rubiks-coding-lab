@@ -9,6 +9,7 @@ import {
 import Cube3D from './components/Cube3D';
 import ConfettiOverlay from './components/ConfettiOverlay';
 import LearningModePanel from './components/LearningModePanel';
+import SolveGuidePanel from './components/SolveGuidePanel';
 import MovePad from './components/MovePad';
 import { BookOpen, RotateCcw, Shuffle, Undo2 } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export default function App() {
   const [cubeStatesHistory, setCubeStatesHistory] = useState<CubeState[]>([]);
   const [triggerConfetti, setTriggerConfetti] = useState(false);
   const [isLearningMode, setIsLearningMode] = useState(false);
+  const [isSolveGuideOpen, setIsSolveGuideOpen] = useState(false);
   const [isProgramRunning, setIsProgramRunning] = useState(false);
 
   const cubeRef = useRef<CubeState>(cube);
@@ -165,9 +167,29 @@ export default function App() {
 
         <button
           type="button"
-          onClick={() => setIsLearningMode((open) => !open)}
+          onClick={() => {
+            setIsLearningMode(false);
+            setIsSolveGuideOpen((open) => !open);
+          }}
           disabled={isProgramRunning}
-          className={`ml-auto flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:cursor-not-allowed disabled:opacity-40 ${
+          className={`ml-auto rounded-lg border px-2.5 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 disabled:cursor-not-allowed disabled:opacity-40 ${
+            isSolveGuideOpen
+              ? 'border-teal-400/30 bg-teal-400/10 text-teal-200'
+              : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700 hover:text-white'
+          }`}
+          aria-label={isSolveGuideOpen ? 'Close Rubik solve guide' : 'Open Rubik solve guide'}
+        >
+          Solve
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsSolveGuideOpen(false);
+            setIsLearningMode((open) => !open);
+          }}
+          disabled={isProgramRunning}
+          className={`ml-1.5 flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:cursor-not-allowed disabled:opacity-40 ${
             isLearningMode
               ? 'border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/15'
               : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700 hover:text-white'
@@ -175,7 +197,7 @@ export default function App() {
           aria-label={isLearningMode ? 'Switch to free play' : 'Open lessons'}
         >
           <BookOpen className="h-3.5 w-3.5" />
-          {isLearningMode ? 'Free play' : 'Learn'}
+          {isLearningMode ? 'Free play' : 'Code'}
         </button>
 
         {!isLearningMode && (
@@ -219,6 +241,13 @@ export default function App() {
       <main className="relative w-full flex-1 overflow-hidden">
         {triggerConfetti && !isLearningMode && <ConfettiOverlay />}
 
+        {isSolveGuideOpen && !isLearningMode && (
+          <SolveGuidePanel
+            cubeState={cube}
+            onClose={() => setIsSolveGuideOpen(false)}
+          />
+        )}
+
         {isLearningMode && (
           <LearningModePanel
             isRunning={isProgramRunning}
@@ -240,7 +269,7 @@ export default function App() {
           />
         </div>
 
-        {!isLearningMode && (
+        {!isLearningMode && !isSolveGuideOpen && (
           <MovePad disabled={isProgramRunning} onMove={handleMove} />
         )}
 
