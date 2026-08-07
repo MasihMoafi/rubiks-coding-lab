@@ -156,6 +156,14 @@ async function runDesktop(browser, report) {
       target: true,
     },
     {
+      command: 'R2',
+      success: 'Target matched in one move.',
+      next: 'Next',
+      target: true,
+      overBudget: 'R R',
+      budgetMessage: 'Target matched in 2 moves. Budget: 1.',
+    },
+    {
       command: "repeat(6) { R U R' U' }",
       success: 'The loop ran 24 moves and returned to the start.',
       next: 'Free play',
@@ -166,6 +174,21 @@ async function runDesktop(browser, report) {
     if (lesson.target) {
       await page.getByLabel('Target cube state').waitFor({ state: 'visible' });
       await inspectLayout(page, `desktop target lesson ${index + 1}`);
+    }
+
+    if (lesson.overBudget) {
+      await page.getByLabel('Move budget 1').waitFor({ state: 'visible' });
+      const input = page.getByLabel('Cube program');
+      await input.fill(lesson.overBudget);
+      await input.press('Enter');
+      await page.getByText(lesson.budgetMessage, { exact: true }).waitFor({
+        state: 'visible',
+        timeout: 12_000,
+      });
+      assert(
+        !(await page.getByText(lesson.success, { exact: true }).isVisible()),
+        'Over-budget solution was incorrectly accepted',
+      );
     }
 
     await runCommand(page, lesson.command, lesson.success);
@@ -208,6 +231,7 @@ async function runDesktop(browser, report) {
     answerReveal: true,
     visualTargets: true,
     alternateTargetSolutions: true,
+    moveBudgetFeedback: true,
     directMoveControls: true,
     freePlayControls: true,
   };

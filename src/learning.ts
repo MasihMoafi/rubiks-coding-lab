@@ -23,6 +23,7 @@ export interface InteractiveLesson {
   example: string;
   initialMoves: string[];
   targetMoves?: string[];
+  moveBudget?: number;
   success: string;
   hint: string;
   validate: (program: ParsedProgram, result: CubeState) => boolean;
@@ -218,6 +219,20 @@ export const INTERACTIVE_LESSONS: InteractiveLesson[] = [
     success: 'Solved. The checker cared only about the resulting state.',
     hint: 'Undo the most recent move first.',
     validate: (_program, result) => isSolved(result),
+  },
+  {
+    id: 'optimize',
+    concept: 'OPTIMIZE',
+    title: 'Make the program smaller',
+    prompt: 'Reach the target in at most one move. A correct state is not enough if the program misses the budget.',
+    example: 'R2',
+    initialMoves: [],
+    targetMoves: ['R2'],
+    moveBudget: 1,
+    success: 'Target matched in one move.',
+    hint: 'You already know notation that compresses two identical quarter-turns into one instruction.',
+    validate: (program, result) =>
+      program.moves.length <= 1 && cubeStatesEqual(result, DOUBLE_RIGHT_STATE),
   },
   {
     id: 'loop',

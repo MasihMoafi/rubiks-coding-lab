@@ -7,7 +7,7 @@ type: interactive Rubik and programming learning app
 
 **Learn algorithms by watching every instruction change a real cube state.**
 
-Rubik Lab is a minimal React/Vite learning environment where Rubik notation is also a tiny programming language. The curriculum moves from exact commands into state-based problem solving: inverses, equivalence, instruction order, algorithms, visual targets, search, and loops.
+Rubik Lab is a minimal React/Vite learning environment where Rubik notation is also a tiny programming language. The curriculum moves from exact commands into state-based problem solving: inverses, equivalence, instruction order, algorithms, visual targets, search, optimization, and loops.
 
 ## Run it
 
@@ -32,9 +32,10 @@ Each lesson has one visible cube, one command field, and one goal:
 6. `R U R' U'` — restore a prepared cube with the right-hand algorithm.
 7. **Target state** — match a compact visual cube target; any equivalent program passes.
 8. **Search** — solve a prepared state with any valid program, not a prescribed answer.
-9. `repeat(6) { R U R' U' }` — compress repeated work into a loop and expose the algorithm's cycle.
+9. **Optimize** — hit the target while staying inside a visible move budget; a correct but longer program is rejected with budget-specific feedback.
+10. `repeat(6) { R U R' U' }` — compress repeated work into a loop and expose the algorithm's cycle.
 
-Programs animate one instruction at a time and expose the currently executing step. Failed attempts restart from the lesson's defined state without automatically revealing the answer. Later challenges are judged by resulting cube state rather than exact source text.
+Programs animate one instruction at a time and expose the currently executing step. Failed attempts restart from the lesson's defined state without automatically revealing the answer. Later challenges are judged by resulting cube state rather than exact source text, and optimization challenges add an explicit move budget on top of correctness.
 
 ## Free play
 
@@ -72,8 +73,9 @@ The automated checks cover:
 - command parsing, normalization, repetition, half-turn notation, and invalid input;
 - every lesson example against its defined initial cube state;
 - alternative programs that reach the same target state;
+- optimization cases where the target is correct but the move budget is exceeded;
 - production TypeScript and Vite builds;
-- a Playwright desktop run completing all nine lessons, including visual targets, alternate valid solutions, wrong-answer recovery, and explicit answer reveal;
+- a Playwright desktop run completing all ten lessons, including visual targets, alternate valid solutions, budget feedback, wrong-answer recovery, and explicit answer reveal;
 - mobile viewport containment and first-lesson completion;
 - free-play move, undo, scramble, and reset controls;
 - screenshots and a machine-readable QA report uploaded by GitHub Actions.

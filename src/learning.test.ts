@@ -72,7 +72,7 @@ describe('parseProgram', () => {
 });
 
 describe('interactive curriculum', () => {
-  it('moves from exact commands into state-goal search', () => {
+  it('moves from exact commands into state-goal search and optimization', () => {
     expect(INTERACTIVE_LESSONS.map((lesson) => lesson.concept)).toEqual([
       'COMMAND',
       'INVERSE',
@@ -82,6 +82,7 @@ describe('interactive curriculum', () => {
       'ALGORITHM',
       'TARGET',
       'SEARCH',
+      'OPTIMIZE',
       'LOOP',
     ]);
   });
@@ -146,5 +147,31 @@ describe('interactive curriculum', () => {
     const result = executeMovesString(start, parsed.program.moves.join(' '));
     expect(parsed.program.normalized).not.toBe(lesson.example);
     expect(lesson.validate(parsed.program, result)).toBe(true);
+  });
+
+  it('rejects a correct target state when the move budget is exceeded', () => {
+    const lesson = INTERACTIVE_LESSONS.find((item) => item.id === 'optimize');
+    expect(lesson).toBeDefined();
+    if (!lesson) return;
+
+    expect(lesson.moveBudget).toBe(1);
+
+    const longProgram = parseProgram('R R');
+    expect(longProgram.ok).toBe(true);
+    if ('error' in longProgram) return;
+    const longResult = executeMovesString(
+      getSolvedState(),
+      longProgram.program.moves.join(' '),
+    );
+    expect(lesson.validate(longProgram.program, longResult)).toBe(false);
+
+    const compactProgram = parseProgram('R2');
+    expect(compactProgram.ok).toBe(true);
+    if ('error' in compactProgram) return;
+    const compactResult = executeMovesString(
+      getSolvedState(),
+      compactProgram.program.moves.join(' '),
+    );
+    expect(lesson.validate(compactProgram.program, compactResult)).toBe(true);
   });
 });
