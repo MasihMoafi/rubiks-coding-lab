@@ -8,14 +8,37 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-async function inspectLayout(page, label) {
-  const metrics = await page.evaluate(() => ({
+async function viewportMetrics(page) {
+  return page.evaluate(() => ({
     innerWidth: window.innerWidth,
     innerHeight: window.innerHeight,
     scrollWidth: document.documentElement.scrollWidth,
     scrollHeight: document.documentElement.scrollHeight,
   }));
+}
 
+async function inspectBuilderLayout(page, label) {
+  const metrics = await viewportMetrics(page);
+  assert(
+    metrics.scrollWidth <= metrics.innerWidth + 1,
+    `${label}: horizontal overflow (${metrics.scrollWidth}px > ${metrics.innerWidth}px)`,
+  );
+
+  const cube = page.locator('#cube-3d-model');
+  await cube.waitFor({ state: 'visible' });
+  const cubeBox = await cube.boundingBox();
+  assert(cubeBox, `${label}: cube has no bounding box`);
+  assert(cubeBox.y >= 0, `${label}: cube begins above the viewport`);
+  assert(
+    cubeBox.y + cubeBox.height <= metrics.innerHeight + 1,
+    `${label}: cube exceeds viewport height`,
+  );
+
+  return { metrics, cube: cubeBox };
+}
+
+async function inspectLessonLayout(page, label) {
+  const metrics = await viewportMetrics(page);
   assert(
     metrics.scrollWidth <= metrics.innerWidth + 1,
     `${label}: horizontal overflow (${metrics.scrollWidth}px > ${metrics.innerWidth}px)`,
@@ -47,7 +70,7 @@ async function inspectLayout(page, label) {
 
   assert(
     !(await page.locator('#btn-spin-up').isVisible()),
-    `${label}: legacy controls are visible during a lesson`,
+    `${label}: builder controls are visible during a code lesson`,
   );
 
   return { metrics, dialog: dialogBox, cube: cubeBox };
@@ -81,16 +104,36 @@ async function runDesktop(browser, report) {
   watchRuntime(page, runtimeErrors);
 
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
-  await page.screenshot({
-    path: `${outputDir}/desktop-start.png`,
-    fullPage: true,
-  });
-
-  const startLayout = await inspectLayout(page, 'desktop start');
+  const builderLayout = await inspectBuilderLayout(page, 'desktop builder start');
   assert(
     (await page.title()) === 'Rubik Lab — Learn by Moving',
     `Unexpected page title: ${await page.title()}`,
   );
+  assert(
+    (await page.getByRole('dialog', { name: 'Interactive cube lesson' }).count()) === 0,
+    'Code lessons opened before the tactile builder',
+  );
+
+  const spinRight = page.getByLabel('Spin right');
+  await spinRight.waitFor({ state: 'visible' });
+  assert(await spinRight.isEnabled(), 'Default selected row cannot be spun right');
+  assert(
+    (await page.locator('.cube-sticker > .animate-pulse').count()) >= 3,
+    'Selected row/column highlight is not visible in builder mode',
+  );
+
+  // The original selected-slice builder must perform a real cube move and remain undoable.
+  await spinRight.click();
+  await page.getByLabel('Undo last action').click();
+
+  await page.screenshot({
+    path: `${outputDir}/desktop-builder-start.png`,
+    fullPage: true,
+  });
+
+  // Programming lessons are opt-in rather than replacing the tactile builder.
+  await page.getByLabel('Open lessons').click();
+  const startLayout = await inspectLessonLayout(page, 'desktop lesson start');
 
   // A failed attempt must preserve the deterministic start without exposing the answer.
   await page.getByLabel('Cube program').fill('U');
@@ -173,7 +216,7 @@ async function runDesktop(browser, report) {
   for (const [index, lesson] of lessons.entries()) {
     if (lesson.target) {
       await page.getByLabel('Target cube state').waitFor({ state: 'visible' });
-      await inspectLayout(page, `desktop target lesson ${index + 1}`);
+      await inspectLessonLayout(page, `desktop target lesson ${index + 1}`);
     }
 
     if (lesson.overBudget) {
@@ -206,12 +249,15 @@ async function runDesktop(browser, report) {
     .getByRole('dialog', { name: 'Interactive cube lesson' })
     .waitFor({ state: 'hidden' });
   await page.getByRole('region', { name: 'Cube moves' }).waitFor();
+  await page.getByLabel('Spin right').waitFor({ state: 'visible' });
   assert(
-    !(await page.locator('#btn-spin-up').isVisible()),
-    'Legacy free-play controls returned after lessons closed',
+    (await page.locator('.cube-sticker > .animate-pulse').count()) >= 3,
+    'Builder selection highlight did not return after lessons',
   );
 
-  // Direct controls must visibly alter state and remain undoable.
+  // Both the restored tactile builder and notation pad remain usable in free play.
+  await page.getByLabel('Spin right').click();
+  await page.getByLabel('Undo last action').click();
   await page.getByRole('button', { name: 'R clockwise' }).click();
   await page.getByLabel('Undo last action').click();
   await page.getByLabel('Scramble cube').click();
@@ -225,7 +271,11 @@ async function runDesktop(browser, report) {
 
   assert(runtimeErrors.length === 0, runtimeErrors.join('\n'));
   report.desktop = {
+    builderLayout,
     startLayout,
+    builderFirst: true,
+    tactileBuilderControls: true,
+    selectedSliceHighlight: true,
     lessonsCompleted: lessons.length,
     wrongAnswerRecovery: true,
     answerReveal: true,
@@ -252,15 +302,24 @@ async function runMobile(browser, report) {
   watchRuntime(page, runtimeErrors);
 
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
-  const startLayout = await inspectLayout(page, 'mobile start');
-  assert(
-    !(await page.getByLabel('Open menu').isVisible()),
-    'Mobile legacy menu is visible during a lesson',
-  );
+  const builderLayout = await inspectBuilderLayout(page, 'mobile builder start');
+  const mobileMenu = page.getByLabel('Open menu');
+  await mobileMenu.waitFor({ state: 'visible' });
+  await mobileMenu.click();
+  await page.getByLabel('Spin right').waitFor({ state: 'visible' });
+  await page.getByLabel('Close menu').click();
+
   await page.screenshot({
-    path: `${outputDir}/mobile-start.png`,
+    path: `${outputDir}/mobile-builder-start.png`,
     fullPage: true,
   });
+
+  await page.getByLabel('Open lessons').click();
+  const startLayout = await inspectLessonLayout(page, 'mobile lesson start');
+  assert(
+    !(await page.getByLabel('Open menu').isVisible()),
+    'Mobile builder menu is visible during a code lesson',
+  );
 
   await runCommand(page, 'R', 'One command changed the cube state.');
   await page.screenshot({
@@ -270,7 +329,10 @@ async function runMobile(browser, report) {
 
   assert(runtimeErrors.length === 0, runtimeErrors.join('\n'));
   report.mobile = {
+    builderLayout,
     startLayout,
+    builderFirst: true,
+    tactileBuilderMenu: true,
     firstLessonCompleted: true,
   };
 
