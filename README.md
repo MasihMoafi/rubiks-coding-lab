@@ -7,7 +7,7 @@ type: interactive Rubik and programming learning app
 
 **Learn algorithms by watching every instruction change a real cube state.**
 
-Rubik Lab is a minimal React/Vite learning environment where Rubik notation is also a tiny programming language. The curriculum moves from single commands to inverse operations, state equivalence, instruction order, algorithms, and loops through short challenges with immediate visual feedback.
+Rubik Lab is a minimal React/Vite learning environment where Rubik notation is also a tiny programming language. The curriculum moves from exact commands into state-based problem solving: inverses, equivalence, instruction order, algorithms, visual targets, search, and loops.
 
 ## Run it
 
@@ -30,9 +30,11 @@ Each lesson has one visible cube, one command field, and one goal:
 4. `R U` — learn that instruction order changes the result.
 5. `R R` — produce the same state as `R2` with a different program.
 6. `R U R' U'` — restore a prepared cube with the right-hand algorithm.
-7. `repeat(6) { R U R' U' }` — compress repeated work into a loop and expose the algorithm's cycle.
+7. **Target state** — match a compact visual cube target; any equivalent program passes.
+8. **Search** — solve a prepared state with any valid program, not a prescribed answer.
+9. `repeat(6) { R U R' U' }` — compress repeated work into a loop and expose the algorithm's cycle.
 
-Programs animate one instruction at a time and expose the currently executing step. Failed attempts restart from the lesson's defined state without automatically revealing the answer; the exact answer can be revealed explicitly when needed.
+Programs animate one instruction at a time and expose the currently executing step. Failed attempts restart from the lesson's defined state without automatically revealing the answer. Later challenges are judged by resulting cube state rather than exact source text.
 
 ## Free play
 
@@ -69,9 +71,9 @@ The automated checks cover:
 - cube cloning, solved-state detection, moves, inverses, and half-turns;
 - command parsing, normalization, repetition, half-turn notation, and invalid input;
 - every lesson example against its defined initial cube state;
-- alternative equivalent-state solutions;
+- alternative programs that reach the same target state;
 - production TypeScript and Vite builds;
-- a Playwright desktop run completing all seven lessons, including wrong-answer recovery and explicit answer reveal;
+- a Playwright desktop run completing all nine lessons, including visual targets, alternate valid solutions, wrong-answer recovery, and explicit answer reveal;
 - mobile viewport containment and first-lesson completion;
 - free-play move, undo, scramble, and reset controls;
 - screenshots and a machine-readable QA report uploaded by GitHub Actions.
