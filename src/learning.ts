@@ -22,6 +22,7 @@ export interface InteractiveLesson {
   prompt: string;
   example: string;
   initialMoves: string[];
+  targetMoves?: string[];
   success: string;
   hint: string;
   validate: (program: ParsedProgram, result: CubeState) => boolean;
@@ -122,6 +123,7 @@ function isExact(program: ParsedProgram, moves: string[]): boolean {
 const RIGHT_HAND = ['R', 'U', "R'", "U'"];
 const RIGHT_HAND_INVERSE = ['U', 'R', "U'", "R'"];
 const DOUBLE_RIGHT_STATE = executeMovesString(getSolvedState(), 'R2');
+const RIGHT_UP_STATE = executeMovesString(getSolvedState(), 'R U');
 
 export const INTERACTIVE_LESSONS: InteractiveLesson[] = [
   {
@@ -192,6 +194,30 @@ export const INTERACTIVE_LESSONS: InteractiveLesson[] = [
     success: 'The right-hand algorithm restored the cube.',
     hint: 'Alternate right and up, then reverse those same two faces.',
     validate: (program, result) => isExact(program, RIGHT_HAND) && isSolved(result),
+  },
+  {
+    id: 'target',
+    concept: 'TARGET',
+    title: 'Match a state, not an answer',
+    prompt: 'Reach the target shown below. Any program that produces the same cube state passes.',
+    example: 'R U',
+    initialMoves: [],
+    targetMoves: ['R', 'U'],
+    success: 'Your program matched the target state.',
+    hint: 'Two moves are enough. Think right, then up.',
+    validate: (_program, result) => cubeStatesEqual(result, RIGHT_UP_STATE),
+  },
+  {
+    id: 'search',
+    concept: 'SEARCH',
+    title: 'Find your own way home',
+    prompt: 'This cube starts scrambled. Reach the solved target with any valid program.',
+    example: "U' R'",
+    initialMoves: ['R', 'U'],
+    targetMoves: [],
+    success: 'Solved. The checker cared only about the resulting state.',
+    hint: 'Undo the most recent move first.',
+    validate: (_program, result) => isSolved(result),
   },
   {
     id: 'loop',
