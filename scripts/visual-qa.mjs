@@ -93,6 +93,36 @@ async function runCommand(page, command, successText) {
   });
 }
 
+async function exerciseSolveGuide(page, label) {
+  await page.getByLabel('Open Rubik solve guide').click();
+  const guide = page.getByRole('dialog', { name: 'Rubik solve guide' });
+  await guide.waitFor({ state: 'visible' });
+
+  assert(
+    await page.getByLabel('Spin right').isVisible(),
+    `${label}: tactile builder disappeared while solve guide was open`,
+  );
+  assert(
+    !(await page.getByRole('region', { name: 'Cube moves' }).isVisible()),
+    `${label}: notation pad overlaps the solve guide`,
+  );
+
+  await guide.getByText('Fix an orientation', { exact: true }).waitFor();
+  await guide.getByRole('button', { name: 'Next' }).click();
+  await guide.getByText('Select a slice', { exact: true }).waitFor();
+  await guide.getByRole('button', { name: 'Next' }).click();
+  await guide.getByText('Build the white cross', { exact: true }).waitFor();
+  await guide.getByText('WHITE CROSS ALIGNED', { exact: true }).waitFor();
+  await guide.getByRole('button', { name: 'Next' }).click();
+  await guide
+    .getByText('Use a repeatable building block', { exact: true })
+    .waitFor();
+  await guide.locator('code').getByText("R U R' U'", { exact: true }).waitFor();
+  await guide.getByRole('button', { name: 'Done' }).click();
+  await guide.waitFor({ state: 'hidden' });
+  await page.getByRole('region', { name: 'Cube moves' }).waitFor({ state: 'visible' });
+}
+
 async function runDesktop(browser, report) {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -131,7 +161,14 @@ async function runDesktop(browser, report) {
     fullPage: true,
   });
 
-  // Programming lessons are opt-in rather than replacing the tactile builder.
+  // The Rubik-solving scaffold stays hands-on: the real cube remains interactive underneath it.
+  await exerciseSolveGuide(page, 'desktop solve guide');
+  await page.screenshot({
+    path: `${outputDir}/desktop-solve-guide-complete.png`,
+    fullPage: true,
+  });
+
+  // Programming lessons are a separate opt-in path rather than replacing the tactile builder.
   await page.getByLabel('Open lessons').click();
   const startLayout = await inspectLessonLayout(page, 'desktop lesson start');
 
@@ -185,14 +222,12 @@ async function runDesktop(browser, report) {
       next: 'Next',
     },
     {
-      // Deliberately not the revealed example. R2 R' is equivalent to R.
       command: "R2 R' U",
       success: 'Your program matched the target state.',
       next: 'Next',
       target: true,
     },
     {
-      // Deliberately longer than the example; the final four U turns cancel out.
       command: "U' R' U U U U",
       success: 'Solved. The checker cared only about the resulting state.',
       next: 'Next',
@@ -255,7 +290,6 @@ async function runDesktop(browser, report) {
     'Builder selection highlight did not return after lessons',
   );
 
-  // Both the restored tactile builder and notation pad remain usable in free play.
   await page.getByLabel('Spin right').click();
   await page.getByLabel('Undo last action').click();
   await page.getByRole('button', { name: 'R clockwise' }).click();
@@ -276,6 +310,8 @@ async function runDesktop(browser, report) {
     builderFirst: true,
     tactileBuilderControls: true,
     selectedSliceHighlight: true,
+    solveGuide: true,
+    alignedCrossDetection: true,
     lessonsCompleted: lessons.length,
     wrongAnswerRecovery: true,
     answerReveal: true,
@@ -314,6 +350,16 @@ async function runMobile(browser, report) {
     fullPage: true,
   });
 
+  await page.getByLabel('Open Rubik solve guide').click();
+  const solveGuide = page.getByRole('dialog', { name: 'Rubik solve guide' });
+  await solveGuide.waitFor({ state: 'visible' });
+  assert(
+    await page.getByLabel('Open menu').isVisible(),
+    'Mobile tactile builder menu disappeared under solve guide',
+  );
+  await page.getByLabel('Close Rubik solve guide').click();
+  await solveGuide.waitFor({ state: 'hidden' });
+
   await page.getByLabel('Open lessons').click();
   const startLayout = await inspectLessonLayout(page, 'mobile lesson start');
   assert(
@@ -333,6 +379,7 @@ async function runMobile(browser, report) {
     startLayout,
     builderFirst: true,
     tactileBuilderMenu: true,
+    solveGuide: true,
     firstLessonCompleted: true,
   };
 
