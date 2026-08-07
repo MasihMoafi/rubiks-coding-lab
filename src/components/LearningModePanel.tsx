@@ -1,13 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ArrowRight, Check, Play, RotateCcw, X } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  Lightbulb,
+  Play,
+  RotateCcw,
+  X,
+} from 'lucide-react';
 import { executeMovesString, getSolvedState } from '../cubeEngine';
 import { INTERACTIVE_LESSONS, parseProgram } from '../learning';
 
 interface LearningModePanelProps {
   isRunning: boolean;
   onClose: () => void;
-  onRunProgram: (moves: string[]) => Promise<void>;
+  onRunProgram: (
+    moves: string[],
+    onStep?: (index: number, move: string) => void,
+  ) => Promise<void>;
   onSetCube: (moves: string[]) => void;
 }
 
@@ -22,6 +32,12 @@ export default function LearningModePanel({
   const [lessonIndex, setLessonIndex] = useState(0);
   const [source, setSource] = useState('');
   const [passed, setPassed] = useState(false);
+  const [answerRevealed, setAnswerRevealed] = useState(false);
+  const [executionStep, setExecutionStep] = useState<{
+    index: number;
+    total: number;
+    move: string;
+  } | null>(null);
   const [feedback, setFeedback] = useState<{
     tone: FeedbackTone;
     text: string;
@@ -34,6 +50,8 @@ export default function LearningModePanel({
   useEffect(() => {
     setSource('');
     setPassed(false);
+    setAnswerRevealed(false);
+    setExecutionStep(null);
     setFeedback({ tone: 'quiet', text: lesson.hint });
     onSetCube(lesson.initialMoves);
 
@@ -45,15 +63,10 @@ export default function LearningModePanel({
     onSetCube(lesson.initialMoves);
     setSource('');
     setPassed(false);
+    setAnswerRevealed(false);
+    setExecutionStep(null);
     setFeedback({ tone: 'quiet', text: lesson.hint });
     inputRef.current?.focus();
-  };
-
-  const useExample = () => {
-    setSource(lesson.example);
-    setPassed(false);
-    setFeedback({ tone: 'quiet', text: 'Press Run and watch the state change.' });
-    window.setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const runProgram = async (event: FormEvent<HTMLFormElement>) => {
@@ -80,6 +93,7 @@ export default function LearningModePanel({
 
     onSetCube(lesson.initialMoves);
     setPassed(false);
+    setExecutionStep(null);
     setFeedback({
       tone: 'quiet',
       text: `Running ${parsed.program.moves.length} move${
@@ -87,7 +101,15 @@ export default function LearningModePanel({
       }…`,
     });
 
-    await onRunProgram(parsed.program.moves);
+    await onRunProgram(parsed.program.moves, (index, move) => {
+      setExecutionStep({
+        index,
+        total: parsed.program.moves.length,
+        move,
+      });
+    });
+
+    setExecutionStep(null);
 
     if (lesson.validate(parsed.program, resultCube)) {
       setPassed(true);
@@ -97,7 +119,7 @@ export default function LearningModePanel({
 
     setFeedback({
       tone: 'error',
-      text: `Not yet. Try ${lesson.example}.`,
+      text: 'Not yet. Re-read the goal or reveal the answer.',
     });
   };
 
@@ -168,14 +190,24 @@ export default function LearningModePanel({
             </div>
             <button
               type="button"
-              onClick={useExample}
+              onClick={() => setAnswerRevealed((revealed) => !revealed)}
               disabled={isRunning}
-              className="max-w-[46%] shrink-0 truncate rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-xs text-indigo-200 transition hover:border-indigo-400/60 hover:bg-indigo-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-              title={`Use ${lesson.example}`}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-indigo-400/60 hover:bg-indigo-500/10 hover:text-indigo-200 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-expanded={answerRevealed}
             >
-              {lesson.example}
+              <Lightbulb className="h-3.5 w-3.5" />
+              {answerRevealed ? 'Hide' : 'Answer'}
             </button>
           </div>
+
+          {answerRevealed && (
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-indigo-400/20 bg-indigo-400/5 px-3 py-2">
+              <span className="text-[11px] text-slate-500">Type it yourself</span>
+              <code className="font-mono text-xs text-indigo-200">
+                {lesson.example}
+              </code>
+            </div>
+          )}
 
           <form onSubmit={runProgram} className="mt-4">
             <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-black/35 p-1.5 focus-within:border-indigo-400/70 focus-within:ring-2 focus-within:ring-indigo-500/10">
@@ -208,6 +240,22 @@ export default function LearningModePanel({
               </button>
             </div>
           </form>
+
+          {executionStep && (
+            <div
+              className="mt-3 flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2"
+              aria-label="Execution trace"
+              aria-live="polite"
+            >
+              <span className="font-mono text-[10px] font-bold tracking-[0.14em] text-slate-500">
+                STEP {executionStep.index + 1}/{executionStep.total}
+              </span>
+              <div className="h-px flex-1 bg-slate-800" />
+              <code className="min-w-8 text-center font-mono text-sm font-bold text-indigo-200">
+                {executionStep.move}
+              </code>
+            </div>
+          )}
 
           <div className="mt-3 flex min-h-8 items-center gap-3">
             <p className={`flex-1 text-xs ${feedbackClass}`} aria-live="polite">
