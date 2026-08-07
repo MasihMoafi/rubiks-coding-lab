@@ -12,7 +12,7 @@ import LearningModePanel from './components/LearningModePanel';
 import MovePad from './components/MovePad';
 import { BookOpen, RotateCcw, Shuffle, Undo2 } from 'lucide-react';
 
-const MOVE_DELAY_MS = 105;
+const MOVE_DELAY_MS = 180;
 const CELEBRATION_MOVE_THRESHOLD = 4;
 
 function wait(milliseconds: number): Promise<void> {
@@ -81,7 +81,10 @@ export default function App() {
   );
 
   const handleRunProgram = useCallback(
-    async (moves: string[]) => {
+    async (
+      moves: string[],
+      onStep?: (index: number, move: string) => void,
+    ) => {
       if (moves.length === 0 || programRunningRef.current) return;
 
       const token = programTokenRef.current + 1;
@@ -96,6 +99,7 @@ export default function App() {
       for (let index = 0; index < moves.length; index += 1) {
         if (programTokenRef.current !== token) return;
 
+        onStep?.(index, moves[index]);
         next = executeMove(next, moves[index]);
         updateCube(next);
 
