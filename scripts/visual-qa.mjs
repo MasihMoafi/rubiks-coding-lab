@@ -142,6 +142,20 @@ async function runDesktop(browser, report) {
       next: 'Next',
     },
     {
+      // Deliberately not the revealed example. R2 R' is equivalent to R.
+      command: "R2 R' U",
+      success: 'Your program matched the target state.',
+      next: 'Next',
+      target: true,
+    },
+    {
+      // Deliberately longer than the example; the final four U turns cancel out.
+      command: "U' R' U U U U",
+      success: 'Solved. The checker cared only about the resulting state.',
+      next: 'Next',
+      target: true,
+    },
+    {
       command: "repeat(6) { R U R' U' }",
       success: 'The loop ran 24 moves and returned to the start.',
       next: 'Free play',
@@ -149,6 +163,11 @@ async function runDesktop(browser, report) {
   ];
 
   for (const [index, lesson] of lessons.entries()) {
+    if (lesson.target) {
+      await page.getByLabel('Target cube state').waitFor({ state: 'visible' });
+      await inspectLayout(page, `desktop target lesson ${index + 1}`);
+    }
+
     await runCommand(page, lesson.command, lesson.success);
     await page.screenshot({
       path: `${outputDir}/desktop-lesson-${index + 1}.png`,
@@ -187,6 +206,8 @@ async function runDesktop(browser, report) {
     lessonsCompleted: lessons.length,
     wrongAnswerRecovery: true,
     answerReveal: true,
+    visualTargets: true,
+    alternateTargetSolutions: true,
     directMoveControls: true,
     freePlayControls: true,
   };
