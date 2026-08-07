@@ -23,7 +23,7 @@ export default function App() {
   const [cube, setCube] = useState<CubeState>(getSolvedState());
   const [cubeStatesHistory, setCubeStatesHistory] = useState<CubeState[]>([]);
   const [triggerConfetti, setTriggerConfetti] = useState(false);
-  const [isLearningMode, setIsLearningMode] = useState(true);
+  const [isLearningMode, setIsLearningMode] = useState(false);
   const [isProgramRunning, setIsProgramRunning] = useState(false);
 
   const cubeRef = useRef<CubeState>(cube);

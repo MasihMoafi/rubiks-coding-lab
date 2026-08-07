@@ -7,13 +7,10 @@
     #020617;
 }
 
-/* Direct notation controls replace the old row/axis/arrow palette. */
+/* Code lessons stay deterministic; the original tactile builder controls remain visible in free play. */
 .learning-stage > div > div:has(> button[aria-label="Open menu"]),
 .learning-stage > div > div:has(> button[aria-label="Close menu"]),
-.learning-stage > div > div:has(#btn-spin-up),
-.free-play-stage > div > div:has(> button[aria-label="Open menu"]),
-.free-play-stage > div > div:has(> button[aria-label="Close menu"]),
-.free-play-stage > div > div:has(#btn-spin-up) {
+.learning-stage > div > div:has(#btn-spin-up) {
   display: none;
 }
 
@@ -37,8 +34,8 @@
   cursor: default;
 }
 
-.learning-stage .cube-sticker > .animate-pulse,
-.free-play-stage .cube-sticker > .animate-pulse {
+/* Selection glow is hidden only in code lessons; builder mode keeps the original row/column highlight. */
+.learning-stage .cube-sticker > .animate-pulse {
   display: none;
 }
 
