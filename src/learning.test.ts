@@ -12,6 +12,15 @@ describe('parseProgram', () => {
     expect(result.program.moves).toEqual(['R', 'U', "R'", "U'"]);
   });
 
+  it('parses half-turn notation', () => {
+    const result = parseProgram('R2 U2');
+
+    expect(result.ok).toBe(true);
+    if ('error' in result) return;
+    expect(result.program.moves).toEqual(['R2', 'U2']);
+    expect(result.program.normalized).toBe('R2 U2');
+  });
+
   it('normalizes common apostrophes', () => {
     const result = parseProgram('r u r’ u′');
 
@@ -29,6 +38,14 @@ describe('parseProgram', () => {
     expect(result.program.repetitions).toBe(6);
     expect(result.program.moves).toHaveLength(24);
     expect(result.program.moves.slice(0, 4)).toEqual(['R', 'U', "R'", "U'"]);
+  });
+
+  it('accepts half-turns inside repeat blocks', () => {
+    const result = parseProgram('repeat(2) { R2 U }');
+
+    expect(result.ok).toBe(true);
+    if ('error' in result) return;
+    expect(result.program.moves).toEqual(['R2', 'U', 'R2', 'U']);
   });
 
   it('also accepts repeat without parentheses', () => {
@@ -55,6 +72,18 @@ describe('parseProgram', () => {
 });
 
 describe('interactive curriculum', () => {
+  it('covers seven progressively richer concepts', () => {
+    expect(INTERACTIVE_LESSONS.map((lesson) => lesson.concept)).toEqual([
+      'COMMAND',
+      'INVERSE',
+      'STATE',
+      'ORDER',
+      'EQUIVALENCE',
+      'ALGORITHM',
+      'LOOP',
+    ]);
+  });
+
   it.each(INTERACTIVE_LESSONS.map((lesson) => [lesson.id, lesson] as const))(
     '%s example passes from its defined cube state',
     (_id, lesson) => {
@@ -74,4 +103,17 @@ describe('interactive curriculum', () => {
       expect(lesson.validate(parsed.program, result)).toBe(true);
     },
   );
+
+  it('accepts an equivalent two-turn solution in the equivalence lesson', () => {
+    const lesson = INTERACTIVE_LESSONS.find((item) => item.id === 'equivalence');
+    expect(lesson).toBeDefined();
+    if (!lesson) return;
+
+    const parsed = parseProgram("R' R'");
+    expect(parsed.ok).toBe(true);
+    if ('error' in parsed) return;
+
+    const result = executeMovesString(getSolvedState(), parsed.program.moves.join(' '));
+    expect(lesson.validate(parsed.program, result)).toBe(true);
+  });
 });
