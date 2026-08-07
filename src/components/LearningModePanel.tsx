@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { executeMovesString, getSolvedState } from '../cubeEngine';
 import { INTERACTIVE_LESSONS, parseProgram } from '../learning';
+import TargetCubeNet from './TargetCubeNet';
 
 interface LearningModePanelProps {
   isRunning: boolean;
@@ -46,6 +47,10 @@ export default function LearningModePanel({
 
   const lesson = INTERACTIVE_LESSONS[lessonIndex];
   const isLastLesson = lessonIndex === INTERACTIVE_LESSONS.length - 1;
+  const targetCube =
+    lesson.targetMoves === undefined
+      ? null
+      : executeMovesString(getSolvedState(), lesson.targetMoves.join(' '));
 
   useEffect(() => {
     setSource('');
@@ -200,9 +205,21 @@ export default function LearningModePanel({
             </button>
           </div>
 
+          {targetCube && (
+            <div className="mt-3 flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/45 px-3 py-2">
+              <span className="font-mono text-[9px] font-bold tracking-[0.16em] text-slate-500">
+                TARGET
+              </span>
+              <TargetCubeNet cubeState={targetCube} />
+              <span className="text-[10px] leading-4 text-slate-500">
+                Match the stickers, not the example.
+              </span>
+            </div>
+          )}
+
           {answerRevealed && (
             <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-indigo-400/20 bg-indigo-400/5 px-3 py-2">
-              <span className="text-[11px] text-slate-500">Type it yourself</span>
+              <span className="text-[11px] text-slate-500">One valid program</span>
               <code className="font-mono text-xs text-indigo-200">
                 {lesson.example}
               </code>
