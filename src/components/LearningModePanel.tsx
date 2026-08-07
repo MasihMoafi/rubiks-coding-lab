@@ -9,7 +9,11 @@ import {
   X,
 } from 'lucide-react';
 import { executeMovesString, getSolvedState } from '../cubeEngine';
-import { INTERACTIVE_LESSONS, parseProgram } from '../learning';
+import {
+  cubeStatesEqual,
+  INTERACTIVE_LESSONS,
+  parseProgram,
+} from '../learning';
 import TargetCubeNet from './TargetCubeNet';
 
 interface LearningModePanelProps {
@@ -85,8 +89,6 @@ export default function LearningModePanel({
       return;
     }
 
-    // Every attempt starts from the lesson's defined state. A wrong answer must
-    // not quietly change the starting conditions for the next attempt.
     const lessonStartCube = executeMovesString(
       getSolvedState(),
       lesson.initialMoves.join(' '),
@@ -115,6 +117,21 @@ export default function LearningModePanel({
     });
 
     setExecutionStep(null);
+
+    const targetMatched =
+      targetCube !== null && cubeStatesEqual(resultCube, targetCube);
+
+    if (
+      lesson.moveBudget !== undefined &&
+      targetMatched &&
+      parsed.program.moves.length > lesson.moveBudget
+    ) {
+      setFeedback({
+        tone: 'error',
+        text: `Target matched in ${parsed.program.moves.length} moves. Budget: ${lesson.moveBudget}.`,
+      });
+      return;
+    }
 
     if (lesson.validate(parsed.program, resultCube)) {
       setPassed(true);
@@ -214,6 +231,14 @@ export default function LearningModePanel({
               <span className="text-[10px] leading-4 text-slate-500">
                 Match the stickers, not the example.
               </span>
+              {lesson.moveBudget !== undefined && (
+                <span
+                  className="ml-auto shrink-0 rounded-md border border-amber-400/20 bg-amber-400/5 px-2 py-1 font-mono text-[9px] font-bold tracking-[0.12em] text-amber-200"
+                  aria-label={`Move budget ${lesson.moveBudget}`}
+                >
+                  ≤ {lesson.moveBudget} MOVE{lesson.moveBudget === 1 ? '' : 'S'}
+                </span>
+              )}
             </div>
           )}
 
