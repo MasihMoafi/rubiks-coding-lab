@@ -92,10 +92,23 @@ async function runDesktop(browser, report) {
     `Unexpected page title: ${await page.title()}`,
   );
 
-  // A failed attempt must not poison the starting state of the next attempt.
+  // A failed attempt must preserve the deterministic start without exposing the answer.
   await page.getByLabel('Cube program').fill('U');
   await page.getByLabel('Cube program').press('Enter');
-  await page.getByText('Not yet. Try R.', { exact: true }).waitFor();
+  await page
+    .getByText('Not yet. Use the hint or reveal the answer.', { exact: true })
+    .waitFor();
+  const lessonDialog = page.getByRole('dialog', { name: 'Interactive cube lesson' });
+  assert(
+    (await lessonDialog.locator('code').count()) === 0,
+    'Wrong-answer feedback leaked the exact answer',
+  );
+
+  // Answer reveal is explicit and reversible.
+  await lessonDialog.getByRole('button', { name: 'Answer' }).click();
+  await lessonDialog.locator('code').getByText('R', { exact: true }).waitFor();
+  await lessonDialog.getByRole('button', { name: 'Hide' }).click();
+  assert((await lessonDialog.locator('code').count()) === 0, 'Answer did not hide');
 
   const lessons = [
     {
@@ -106,6 +119,21 @@ async function runDesktop(browser, report) {
     {
       command: "R'",
       success: 'The inverse restored the previous state.',
+      next: 'Next',
+    },
+    {
+      command: 'R2',
+      success: 'A half-turn is its own inverse.',
+      next: 'Next',
+    },
+    {
+      command: 'R U',
+      success: 'The same commands in the right order restored the cube.',
+      next: 'Next',
+    },
+    {
+      command: 'R R',
+      success: 'Different programs can produce the same state.',
       next: 'Next',
     },
     {
@@ -158,6 +186,7 @@ async function runDesktop(browser, report) {
     startLayout,
     lessonsCompleted: lessons.length,
     wrongAnswerRecovery: true,
+    answerReveal: true,
     directMoveControls: true,
     freePlayControls: true,
   };

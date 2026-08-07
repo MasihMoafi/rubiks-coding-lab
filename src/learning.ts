@@ -1,4 +1,4 @@
-import { isSolved } from './cubeEngine';
+import { executeMovesString, getSolvedState, isSolved } from './cubeEngine';
 import { CubeState } from './types';
 
 export type ProgramKind = 'sequence' | 'repeat';
@@ -27,7 +27,7 @@ export interface InteractiveLesson {
   validate: (program: ParsedProgram, result: CubeState) => boolean;
 }
 
-const VALID_MOVE = /^[UDFBLRMES]'?$/;
+const VALID_MOVE = /^[UDFBLRMES](?:2|')?$/;
 const MAX_REPEAT = 12;
 const MAX_EXPANDED_MOVES = 120;
 const FACE_ORDER = ['U', 'D', 'F', 'B', 'L', 'R'] as const;
@@ -121,11 +121,12 @@ function isExact(program: ParsedProgram, moves: string[]): boolean {
 
 const RIGHT_HAND = ['R', 'U', "R'", "U'"];
 const RIGHT_HAND_INVERSE = ['U', 'R', "U'", "R'"];
+const DOUBLE_RIGHT_STATE = executeMovesString(getSolvedState(), 'R2');
 
 export const INTERACTIVE_LESSONS: InteractiveLesson[] = [
   {
     id: 'move',
-    concept: 'MOVE',
+    concept: 'COMMAND',
     title: 'Turn one face',
     prompt: 'Use one instruction to turn the right face clockwise.',
     example: 'R',
@@ -144,6 +145,42 @@ export const INTERACTIVE_LESSONS: InteractiveLesson[] = [
     success: 'The inverse restored the previous state.',
     hint: 'An apostrophe means the inverse of a move.',
     validate: (program, result) => isExact(program, ["R'"]) && isSolved(result),
+  },
+  {
+    id: 'double',
+    concept: 'STATE',
+    title: 'Use a half-turn',
+    prompt: 'The right face is already turned halfway. Undo it with one instruction.',
+    example: 'R2',
+    initialMoves: ['R2'],
+    success: 'A half-turn is its own inverse.',
+    hint: 'The suffix 2 means perform that face turn twice.',
+    validate: (program, result) => isExact(program, ['R2']) && isSolved(result),
+  },
+  {
+    id: 'order',
+    concept: 'ORDER',
+    title: 'Order the instructions',
+    prompt: 'The cube is two moves from solved. Restore it with right, then up.',
+    example: 'R U',
+    initialMoves: ["U'", "R'"],
+    success: 'The same commands in the right order restored the cube.',
+    hint: 'Programs run left to right. U means turn the upper face clockwise.',
+    validate: (program, result) => isExact(program, ['R', 'U']) && isSolved(result),
+  },
+  {
+    id: 'equivalence',
+    concept: 'EQUIVALENCE',
+    title: 'Write the same state another way',
+    prompt: 'Reach the same state as R2, but use exactly two face-turn instructions.',
+    example: 'R R',
+    initialMoves: [],
+    success: 'Different programs can produce the same state.',
+    hint: 'Two quarter-turns on the same face equal one half-turn.',
+    validate: (program, result) =>
+      program.kind === 'sequence' &&
+      program.moves.length === 2 &&
+      cubeStatesEqual(result, DOUBLE_RIGHT_STATE),
   },
   {
     id: 'sequence',
