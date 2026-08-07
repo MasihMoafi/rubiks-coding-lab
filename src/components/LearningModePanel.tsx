@@ -119,7 +119,7 @@ export default function LearningModePanel({
 
     setFeedback({
       tone: 'error',
-      text: `Not yet. Try ${lesson.example}.`,
+      text: 'Not yet. Use the hint or reveal the answer.',
     });
   };
 
