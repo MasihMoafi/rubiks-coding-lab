@@ -11,8 +11,10 @@ import {
 import { executeMovesString, getSolvedState } from '../cubeEngine';
 import {
   cubeStatesEqual,
+  evaluateProgramCondition,
   INTERACTIVE_LESSONS,
   parseProgram,
+  resolveProgramMoves,
 } from '../learning';
 import TargetCubeNet from './TargetCubeNet';
 
@@ -38,6 +40,10 @@ export default function LearningModePanel({
   const [source, setSource] = useState('');
   const [passed, setPassed] = useState(false);
   const [answerRevealed, setAnswerRevealed] = useState(false);
+  const [branchTrace, setBranchTrace] = useState<{
+    condition: string;
+    matched: boolean;
+  } | null>(null);
   const [executionStep, setExecutionStep] = useState<{
     index: number;
     total: number;
@@ -60,6 +66,7 @@ export default function LearningModePanel({
     setSource('');
     setPassed(false);
     setAnswerRevealed(false);
+    setBranchTrace(null);
     setExecutionStep(null);
     setFeedback({ tone: 'quiet', text: lesson.hint });
     onSetCube(lesson.initialMoves);
@@ -73,6 +80,7 @@ export default function LearningModePanel({
     setSource('');
     setPassed(false);
     setAnswerRevealed(false);
+    setBranchTrace(null);
     setExecutionStep(null);
     setFeedback({ tone: 'quiet', text: lesson.hint });
     inputRef.current?.focus();
@@ -93,25 +101,35 @@ export default function LearningModePanel({
       getSolvedState(),
       lesson.initialMoves.join(' '),
     );
+    const conditionResult = evaluateProgramCondition(parsed.program, lessonStartCube);
+    const resolvedMoves = resolveProgramMoves(parsed.program, lessonStartCube);
     const resultCube = executeMovesString(
       lessonStartCube,
-      parsed.program.moves.join(' '),
+      resolvedMoves.join(' '),
     );
 
     onSetCube(lesson.initialMoves);
     setPassed(false);
     setExecutionStep(null);
+    setBranchTrace(
+      conditionResult === null || !parsed.program.condition
+        ? null
+        : { condition: parsed.program.condition, matched: conditionResult },
+    );
     setFeedback({
       tone: 'quiet',
-      text: `Running ${parsed.program.moves.length} move${
-        parsed.program.moves.length === 1 ? '' : 's'
-      }…`,
+      text:
+        conditionResult === null
+          ? `Running ${resolvedMoves.length} move${resolvedMoves.length === 1 ? '' : 's'}…`
+          : conditionResult
+            ? `Condition is true. Running ${resolvedMoves.length} move${resolvedMoves.length === 1 ? '' : 's'}…`
+            : 'Condition is false. The branch is skipped.',
     });
 
-    await onRunProgram(parsed.program.moves, (index, move) => {
+    await onRunProgram(resolvedMoves, (index, move) => {
       setExecutionStep({
         index,
-        total: parsed.program.moves.length,
+        total: resolvedMoves.length,
         move,
       });
     });
@@ -124,11 +142,11 @@ export default function LearningModePanel({
     if (
       lesson.moveBudget !== undefined &&
       targetMatched &&
-      parsed.program.moves.length > lesson.moveBudget
+      resolvedMoves.length > lesson.moveBudget
     ) {
       setFeedback({
         tone: 'error',
-        text: `Target matched in ${parsed.program.moves.length} moves. Budget: ${lesson.moveBudget}.`,
+        text: `Target matched in ${resolvedMoves.length} moves. Budget: ${lesson.moveBudget}.`,
       });
       return;
     }
@@ -262,6 +280,7 @@ export default function LearningModePanel({
                 onChange={(event) => {
                   setSource(event.target.value);
                   setPassed(false);
+                  setBranchTrace(null);
                 }}
                 onKeyDown={(event) => event.stopPropagation()}
                 disabled={isRunning}
@@ -282,6 +301,22 @@ export default function LearningModePanel({
               </button>
             </div>
           </form>
+
+          {branchTrace && (
+            <div
+              className="mt-3 flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2"
+              aria-label="Condition trace"
+              aria-live="polite"
+            >
+              <span className="font-mono text-[10px] font-bold tracking-[0.14em] text-slate-500">
+                IF {branchTrace.condition.toUpperCase()}
+              </span>
+              <div className="h-px flex-1 bg-slate-800" />
+              <code className={`font-mono text-xs font-bold ${branchTrace.matched ? 'text-emerald-300' : 'text-rose-300'}`}>
+                {branchTrace.matched ? 'TRUE → RUN' : 'FALSE → SKIP'}
+              </code>
+            </div>
+          )}
 
           {executionStep && (
             <div
