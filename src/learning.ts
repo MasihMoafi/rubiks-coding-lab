@@ -1,7 +1,8 @@
 import { executeMovesString, getSolvedState, isSolved } from './cubeEngine';
 import { CubeState } from './types';
 
-export type ProgramKind = 'sequence' | 'repeat';
+export type ProgramKind = 'sequence' | 'repeat' | 'conditional';
+export type ProgramCondition = 'solved' | 'unsolved';
 
 export interface ParsedProgram {
   kind: ProgramKind;
@@ -9,6 +10,7 @@ export interface ParsedProgram {
   repetitions: number;
   moves: string[];
   normalized: string;
+  condition?: ProgramCondition;
 }
 
 export type ParseProgramResult =
@@ -68,6 +70,29 @@ function parseMoveList(source: string): ParseProgramResult {
 
 export function parseProgram(source: string): ParseProgramResult {
   const normalizedSource = normalizeApostrophes(source).trim();
+  const conditionalMatch = normalizedSource.match(
+    /^if\s+(solved|unsolved)\s*\{\s*([^{}]+)\s*\}$/i,
+  );
+
+  if (conditionalMatch) {
+    const condition = conditionalMatch[1].toLowerCase() as ProgramCondition;
+    const bodyResult = parseMoveList(conditionalMatch[2]);
+    if (!bodyResult.ok) return bodyResult;
+
+    const bodyMoves = bodyResult.program.moves;
+    return {
+      ok: true,
+      program: {
+        kind: 'conditional',
+        condition,
+        bodyMoves,
+        repetitions: 1,
+        moves: bodyMoves,
+        normalized: `if ${condition} { ${bodyMoves.join(' ')} }`,
+      },
+    };
+  }
+
   const repeatMatch = normalizedSource.match(
     /^repeat\s*(?:\(\s*(\d+)\s*\)|(\d+))\s*\{\s*([^{}]+)\s*\}$/i,
   );
@@ -104,6 +129,22 @@ export function parseProgram(source: string): ParseProgramResult {
       normalized: `repeat(${repetitions}) { ${bodyMoves.join(' ')} }`,
     },
   };
+}
+
+export function evaluateProgramCondition(
+  program: ParsedProgram,
+  state: CubeState,
+): boolean | null {
+  if (program.kind !== 'conditional' || !program.condition) return null;
+  return program.condition === 'solved' ? isSolved(state) : !isSolved(state);
+}
+
+export function resolveProgramMoves(
+  program: ParsedProgram,
+  state: CubeState,
+): string[] {
+  const conditionResult = evaluateProgramCondition(program, state);
+  return conditionResult === false ? [] : program.moves;
 }
 
 export function cubeStatesEqual(a: CubeState, b: CubeState): boolean {
@@ -248,6 +289,21 @@ export const INTERACTIVE_LESSONS: InteractiveLesson[] = [
       program.repetitions === 6 &&
       program.bodyMoves.length === RIGHT_HAND.length &&
       program.bodyMoves.every((move, index) => move === RIGHT_HAND[index]) &&
+      isSolved(result),
+  },
+  {
+    id: 'condition',
+    concept: 'CONDITION',
+    title: 'Act only when needed',
+    prompt: 'The cube starts unsolved. Inspect its state and run the repair only if it is unsolved.',
+    example: "if unsolved { U' R' }",
+    initialMoves: ['R', 'U'],
+    targetMoves: [],
+    success: 'The condition was true, so the repair branch ran.',
+    hint: 'A condition decides whether the moves inside its block execute.',
+    validate: (program, result) =>
+      program.kind === 'conditional' &&
+      program.condition === 'unsolved' &&
       isSolved(result),
   },
 ];
