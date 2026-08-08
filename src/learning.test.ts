@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { executeMovesString, getSolvedState } from './cubeEngine';
-import { INTERACTIVE_LESSONS, parseProgram } from './learning';
+import {
+  evaluateProgramCondition,
+  INTERACTIVE_LESSONS,
+  parseProgram,
+  resolveProgramMoves,
+} from './learning';
 
 describe('parseProgram', () => {
   it('parses a move sequence', () => {
@@ -56,6 +61,17 @@ describe('parseProgram', () => {
     expect(result.program.moves).toEqual(['R', 'U', 'R', 'U', 'R', 'U']);
   });
 
+  it('parses a state condition', () => {
+    const result = parseProgram("if unsolved { U' R' }");
+
+    expect(result.ok).toBe(true);
+    if ('error' in result) return;
+    expect(result.program.kind).toBe('conditional');
+    expect(result.program.condition).toBe('unsolved');
+    expect(result.program.moves).toEqual(["U'", "R'"]);
+    expect(result.program.normalized).toBe("if unsolved { U' R' }");
+  });
+
   it('rejects invalid commands', () => {
     const result = parseProgram('turn-right');
 
@@ -71,8 +87,30 @@ describe('parseProgram', () => {
   });
 });
 
+describe('conditional execution', () => {
+  it('runs an unsolved branch when the cube is unsolved', () => {
+    const parsed = parseProgram("if unsolved { U' R' }");
+    expect(parsed.ok).toBe(true);
+    if ('error' in parsed) return;
+
+    const start = executeMovesString(getSolvedState(), 'R U');
+    expect(evaluateProgramCondition(parsed.program, start)).toBe(true);
+    expect(resolveProgramMoves(parsed.program, start)).toEqual(["U'", "R'"]);
+  });
+
+  it('skips an unsolved branch when the cube is solved', () => {
+    const parsed = parseProgram('if unsolved { R }');
+    expect(parsed.ok).toBe(true);
+    if ('error' in parsed) return;
+
+    const start = getSolvedState();
+    expect(evaluateProgramCondition(parsed.program, start)).toBe(false);
+    expect(resolveProgramMoves(parsed.program, start)).toEqual([]);
+  });
+});
+
 describe('interactive curriculum', () => {
-  it('moves from exact commands into state-goal search and optimization', () => {
+  it('moves from exact commands into state-goal search, loops, and conditions', () => {
     expect(INTERACTIVE_LESSONS.map((lesson) => lesson.concept)).toEqual([
       'COMMAND',
       'INVERSE',
@@ -84,6 +122,7 @@ describe('interactive curriculum', () => {
       'SEARCH',
       'OPTIMIZE',
       'LOOP',
+      'CONDITION',
     ]);
   });
 
@@ -98,10 +137,8 @@ describe('interactive curriculum', () => {
         getSolvedState(),
         lesson.initialMoves.join(' '),
       );
-      const result = executeMovesString(
-        start,
-        parsed.program.moves.join(' '),
-      );
+      const resolvedMoves = resolveProgramMoves(parsed.program, start);
+      const result = executeMovesString(start, resolvedMoves.join(' '));
 
       expect(lesson.validate(parsed.program, result)).toBe(true);
     },
